@@ -294,9 +294,7 @@ def booking_main():
 
     dotenv.load_dotenv()
 
-    data_folder = os.environ.get('STATICS_FOLDER')
     log_folder = os.environ.get('LOGS')
-    output_folder = os.environ.get('OUTPUT_FOLDER')
 
     args = main_arguments()
 
