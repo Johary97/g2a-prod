@@ -25,6 +25,7 @@ from selenium.webdriver.common.keys import Keys
 import socket
 from selenium.webdriver.remote.command import Command
 from tools.g2a import G2A
+from tools.changeip import refresh_connection
 
 
 class Scraping(object):

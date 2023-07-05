@@ -15,6 +15,7 @@ import argparse
 from tools.args import main_arguments, check_arguments
 import sys
 import json
+from tools.changeip import refresh_connection
 
 
 class AnnonceBooking(Scraping):
@@ -180,8 +181,11 @@ class BookingScraper(Scraper):
                 instance.save()
                 self.set_history('last_scraped', last_url)
             except Exception as e:
-                print(e)
-                sys.exit("Arrêt!")
+                break
+        
+        if self.get_history('last_scraped') < len(self.urls - 1):
+            refresh_connection()
+            self.start()
 
     def get_history(self, key: str) -> object:
         logs = {}

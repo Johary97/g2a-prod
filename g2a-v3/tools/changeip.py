@@ -14,7 +14,10 @@ def refresh_connection():
     dotenv.load_dotenv()
     connection_id = os.environ.get('CONNECTION_ID')
 
+    print("Déconnexion ...")
+
     activate_deactivate_connection(connection_id,"down")
     time.sleep(5)
+    print("Reconnexion ...")
     activate_deactivate_connection(connection_id,"up")
     time.sleep(5)
