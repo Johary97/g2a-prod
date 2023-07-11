@@ -158,6 +158,7 @@ class BookingScraper(Scraper):
             checkout += timedelta(days=1)
 
     def start(self) -> None:
+        refresh_connection()
         instance = AnnonceBooking()
         logpath = f"{os.environ.get('LOGS')}/booking/{self.week_scrap.replace('/', '_')}/{self.frequency}j"
         logfile = f"{logpath}/{self.name}_{self.frequency}j_{self.start_date.replace('/', '_')}-{self.end_date.replace('/', '_')}.json"
@@ -182,9 +183,10 @@ class BookingScraper(Scraper):
                 self.set_history('last_scraped', last_url)
             except Exception as e:
                 break
+
+        last_url = self.get_history('last_scraped')
         
-        if self.get_history('last_scraped') < len(self.urls - 1):
-            refresh_connection()
+        if last_url < len(self.urls) - 1:
             self.start()
 
     def get_history(self, key: str) -> object:
