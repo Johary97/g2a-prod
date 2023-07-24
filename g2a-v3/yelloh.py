@@ -86,6 +86,8 @@ class YellohDestinationScraper(Scraping):
         try:
             self.driver.find_element(By.CSS_SELECTOR, SEARCH_BTN).click()
             time.sleep(randint(1, 3))
+            self.driver.find_element(By.ID, 'searchText').clear()
+            time.sleep(randint(1, 5))
             self.driver.find_element(By.ID, 'searchText').send_keys(
                 self.search_keys[self.key_index])
             WebDriverWait(self.driver, 30).until(
@@ -100,14 +102,15 @@ class YellohDestinationScraper(Scraping):
                 EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_RESULT))
             )
         except Exception as e:
-            print("An error occured!!!!")
-            print(e)
+            # print("An error occured!!!!")
+            # print(e)
+            pass
 
     def extract(self) -> None:
         print("Extracting")
         try:
-            print(self.driver.current_url)
             soupe = BeautifulSoup(self.driver.page_source, 'lxml')
+            # print(soupe)
             campings = soupe.find(
                 'div', class_="CampingList-masonry").find_all('article', class_="Camping")
             print(f"==> {len(campings)} destinations found")
@@ -144,6 +147,7 @@ class YellohDestinationScraper(Scraping):
         try:
             while not self.scrap_finished:
                 self.setup_search()
+                time.sleep(5)
                 self.extract()
                 self.save_dests()
                 self.set_index()
