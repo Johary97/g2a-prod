@@ -120,6 +120,7 @@ class BookingScraper(Scraper):
         self.urls = []
         self.week_scrap = ''
         self.code = og.create_code()
+        self.set_logfile()
 
     def get_next_monday(self):
         next_monday = datetime.now() + timedelta(7 - datetime.now().weekday() or 7)
@@ -134,9 +135,6 @@ class BookingScraper(Scraper):
     def set_destids(self, filename):
         df = pd.read_csv(f"{os.environ.get('STATICS_FOLDER')}/{filename}")
         self.destids = df['dest_id']
-
-    def set_logfile(self, log):
-        self.log = log
 
     def initialize(self) -> None:
 
@@ -160,16 +158,9 @@ class BookingScraper(Scraper):
     def start(self) -> None:
         refresh_connection()
         instance = AnnonceBooking()
-        logpath = f"{os.environ.get('LOGS')}/booking/{self.week_scrap.replace('/', '_')}/{self.frequency}j"
-        logfile = f"{logpath}/{self.name}_{self.frequency}j_{self.start_date.replace('/', '_')}-{self.end_date.replace('/', '_')}.json"
-
-        if not os.path.exists(logpath):
-            os.makedirs(logpath)
-
         instance.set_week_scrap(self.week_scrap)
         instance.set_nights(self.frequency)
 
-        self.set_logfile(logfile)
         last_scraped = self.get_history('last_scraped')
 
         for last_url in range(last_scraped + 1, len(self.urls)):
@@ -211,6 +202,15 @@ class BookingScraper(Scraper):
 
         with open(self.log, 'w') as log_file:
             log_file.write(json.dumps(log, indent=4))
+
+    def set_logfile(self):
+        logpath = f"{os.environ.get('LOGS')}/booking/{self.week_scrap.replace('/', '_')}/{self.frequency}j"
+        logfile = f"{logpath}/{self.name}_{self.frequency}j_{self.start_date.replace('/', '_')}-{self.end_date.replace('/', '_')}.json"
+
+        if not os.path.exists(logpath):
+            os.makedirs(logpath)
+
+        self.log = logfile
 
 
 class CleanBooking(object):
@@ -320,18 +320,12 @@ def booking_main():
         if not len(miss):
             date_scrap = args.date_price
 
-            log_path = f"{log_folder}/booking/{date_scrap.replace('/', '_')}"
-
-            if not os.path.exists(log_path):
-                os.makedirs(log_path)
-
             b = BookingScraper(args.name,
                                args.start_date,
                                args.end_date,
                                args.frequency)
             b.set_destids(args.destinations)
             b.set_week_scrap(args.date_price)
-            # b.set_log(f'{log_path}/{args.log}')
             b.initialize()
             b.start()
 

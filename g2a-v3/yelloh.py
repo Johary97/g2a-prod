@@ -74,52 +74,70 @@ class YellohDestinationScraper(Scraping):
             pass
 
     def setup_search(self) -> None:
+        print("Setup search")
         global SEARCH_BTN
         global SEARCH_OPTIONLIST
         global SEARCH_FIRSTOPTION
         global SEARCH_RESULT
         global SEARCH_PERSONFILTER
 
-        self.driver.find_element(By.CSS_SELECTOR, SEARCH_BTN).click()
-        time.sleep(randint(1, 3))
-        self.driver.find_element(By.ID, 'searchText').send_keys(
-            self.search_keys[self.key_index])
-        WebDriverWait(self.driver, 30).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_OPTIONLIST)))
-        self.driver.find_element(By.CSS_SELECTOR, SEARCH_FIRSTOPTION).click()
-        time.sleep(1)
-        self.driver.find_element(By.ID, 'personnesInput').click()
-        time.sleep(1)
-        self.driver.find_element(By.CSS_SELECTOR, SEARCH_PERSONFILTER).click()
-        self.driver.find_element(By.CSS_SELECTOR, SEARCH_SUBMIT).click()
-        WebDriverWait(self.driver, 30).until(
-            EC.presence_of_element_located(By.CSS_SELECTOR, SEARCH_RESULT)
-        )
+        try:
+            self.driver.find_element(By.CSS_SELECTOR, SEARCH_BTN).click()
+            time.sleep(randint(1, 3))
+            self.driver.find_element(By.ID, 'searchText').send_keys(
+                self.search_keys[self.key_index])
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_OPTIONLIST)))
+            self.driver.find_element(By.CSS_SELECTOR, SEARCH_FIRSTOPTION).click()
+            time.sleep(1)
+            self.driver.find_element(By.ID, 'personnesInput').click()
+            time.sleep(1)
+            self.driver.find_element(By.CSS_SELECTOR, SEARCH_PERSONFILTER).click()
+            self.driver.find_element(By.CSS_SELECTOR, SEARCH_SUBMIT).click()
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_RESULT))
+            )
+        except Exception as e:
+            print("An error occured!!!!")
+            print(e)
 
     def extract(self) -> None:
-        soupe = BeautifulSoup(self.driver.page_source, 'lxml')
-        campings = soupe.find(
-            'div', class_="CampingList-masonry").find_all('article', class_="Camping")
-        print(f"==> {len(campings)} destinations found")
-        for i in range(len(campings)):
-            self.data.append("https://www.yellohvillage.fr" +
-                             campings[i].find('a', class_="Camping-btn--location", href=True)['href'])
+        print("Extracting")
+        try:
+            print(self.driver.current_url)
+            soupe = BeautifulSoup(self.driver.page_source, 'lxml')
+            campings = soupe.find(
+                'div', class_="CampingList-masonry").find_all('article', class_="Camping")
+            print(f"==> {len(campings)} destinations found")
+            for i in range(len(campings)):
+                self.data.append("https://www.yellohvillage.fr" +
+                                campings[i].find('a', class_="Camping-btn--location", href=True)['href'])
+        except Exception as e:
+            print("Extraction error")
+            print(e)
 
     def save_dests(self) -> None:
         current_list = []
+        print("Saving")
 
-        if os.path.exists(self.storage_file):
-            with open(self.storage_file, 'r') as openfile:
-                current_list = json.load(openfile)
+        try:
 
-        current_data = list(set([item for item in current_list + self.data]))
-        json_object = json.dumps(current_data, indent=4)
+            if os.path.exists(self.dest_location):
+                with open(self.dest_location, 'r') as openfile:
+                    current_list = json.load(openfile)
 
-        with open(self.dest_location, "w") as dest_file:
-            dest_file.write(json_object)
-        self.dests = []
+            current_data = list(set([item for item in current_list + self.data]))
+            json_object = json.dumps(current_data, indent=4)
+
+            with open(self.dest_location, "w") as dest_file:
+                dest_file.write(json_object)
+            self.dests = []
+
+        except Exception as e:
+            print(e)
 
     def execute(self) -> None:
+        print("Executing")
         try:
             while not self.scrap_finished:
                 self.setup_search()
@@ -204,25 +222,19 @@ class AnnonceYellohScraper(Scraping):
 def yelloh_main():
     dotenv.load_dotenv()
 
-    data_folder = os.environ.get('STATIC_FOLDER')
-    log_folder = os.environ.get('LOGS')
+    data_folder = os.environ.get('STATICS_FOLDER')
 
     args = main_arguments()
     date_scrap = args.date_price
 
-    log_path = f"{log_folder}/yelloh/{date_scrap.replace('/', '_')}"
-
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
-
     if args.action and args.action == 'init':
 
-        miss = check_arguments(args, ['-d', '-s', '-l'])
+        miss = check_arguments(args, ['-d', '-l'])
 
         if not len(miss):
             y = YellohDestinationScraper(
-                f'{data_folder}/{args.destinations}', f'{data_folder}/{args.stations}')
-            y.set_log(f'{log_path}/d_{args.log}')
+                f'{data_folder}/{args.destinations}')
+            y.set_logfile('yellohvillage', f'd_{args.log}', args.date_price)
             y.execute()
 
     if args.action and args.action == 'start':
@@ -233,7 +245,7 @@ def yelloh_main():
             y = AnnonceYellohScraper(
                 f'{data_folder}/{args.destinations}', args.date_price)
             y.set_interval(args.start_date, args.end_date)
-            y.set_log(f'{log_path}/{args.log}')
+            y.set_logfile('yellohvillage', f'a_{args.log}', args.date_price)
             y.execute()
 
         else:
