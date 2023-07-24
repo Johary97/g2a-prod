@@ -24,6 +24,7 @@ from urllib.parse import urlparse, parse_qs
 from scraping import Scraping, Scraper
 from tools.args import main_arguments, ARGS_INFO, check_arguments
 import dotenv
+from tools.changeip import refresh_connection
 
 SEARCH_BTN = "#mm-1 > div.main > div:nth-child(2) > header > div.Header-container.Container > div:nth-child(1) > button:nth-child(3)"
 SEARCH_OPTIONLIST = "#mm-1 > div.main > div:nth-child(2) > header > div.Header-search > div > form > div.Search-wrapper.Search-wrapper--larger > div.Search-autocompleteDropdown > div.Search-autocompleteBox.Search-autocompletePart > div > button"
@@ -37,6 +38,7 @@ class YellohDestinationScraper(Scraping):
 
     def __init__(self, dest_location: str, in_background: bool = False) -> None:
         super().__init__(in_background)
+        refresh_connection()
         self.dest_location = dest_location
         self.data_extension = 'json'
         self.key_index = 0
@@ -120,6 +122,7 @@ class YellohDestinationScraper(Scraping):
         self.dests = []
 
     def execute(self) -> None:
+        refresh_connection()
         try:
             while not self.scrap_finished:
                 self.setup_search()
@@ -130,6 +133,9 @@ class YellohDestinationScraper(Scraping):
             print("Yelloh destination scraped !")
         except:
             pass
+            
+        if not self.scrap_finished:
+            self.execute()
 
 
 class AnnonceYellohScraper(Scraping):
@@ -217,11 +223,11 @@ def yelloh_main():
 
     if args.action and args.action == 'init':
 
-        miss = check_arguments(args, ['-d', '-s', '-l'])
+        miss = check_arguments(args, ['-d', '-l'])
 
         if not len(miss):
             y = YellohDestinationScraper(
-                f'{data_folder}/{args.destinations}', f'{data_folder}/{args.stations}')
+                f'{data_folder}/{args.destinations}')
             y.set_log(f'{log_path}/d_{args.log}')
             y.execute()
 
