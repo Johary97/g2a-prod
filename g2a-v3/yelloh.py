@@ -197,7 +197,6 @@ class AnnonceYelloh(Scraping):
     def set_configs(self) -> None:
         self.driver.execute_script(f"window.localStorage.setItem('date_start', '{self.start_date}');")
         self.driver.execute_script(f"window.localStorage.setItem('date_end', '{self.end_date}');")
-        self.driver.execute_script("window.localStorage.setItem('nb_personnes_label', '4+ pers');")
         self.driver.execute_script("window.location.reload();")
         time.sleep(5)
         try:
@@ -205,14 +204,18 @@ class AnnonceYelloh(Scraping):
             WebDriverWait(self.driver, 5)
         except Exception as e:
             print("Erreur bouton")
-            print(e)       
-
-    def set_dates(self):
-        self.driver.execute_script(
-            "window.localStorage.setItem('date_start', '29/07/2023');)")
-        self.driver.execute_script(
-            "window.localStorage.setItem('date_end', '05/08/2023');)")
+            print(e)
+        
+    def set_nb_pers(self, nb_pers) -> None:
+        self.driver.execute_script(f"window.localStorage.setItem('nb_personnes_label', {nb_pers}');")
         self.driver.execute_script("window.location.reload();")
+        time.sleep(5)
+        try:
+            self.driver.find_element(By.XPATH, '//button[@aria-label="Voir prix et disponibilités"]').click()
+            WebDriverWait(self.driver, 5)
+        except Exception as e:
+            print("Erreur bouton")
+            print(e)
 
     def extract(self) -> None:
         for i in range(5):
@@ -299,13 +302,18 @@ class YellohScraper(Scraper):
             try:
                 print(index+1, ' / ', len(self.urls))
                 c.set_url(self.urls[index])
+                print("***** ", c.url, " *****")
                 c.set_interval(self.start_date, self.end_date)
                 c.scrap()
                 time.sleep(5)
                 c.set_configs()
+
+               # for nb in ['4+ pers', '6+ pers', '8+ pers']:
+               #     c.set_nb_pers(nb)
                 time.sleep(5)
                 c.extract()
                 c.save()
+                
                 self.set_history('last_index', index)
                 # c.increment_counter()
             except Exception as e:
