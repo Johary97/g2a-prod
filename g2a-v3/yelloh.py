@@ -194,9 +194,11 @@ class AnnonceYelloh(Scraping):
         self.start_date = start_date
         self.end_date = end_date
 
-    def set_configs(self) -> None:
+    def set_dates(self) -> None:
         self.driver.execute_script(f"window.localStorage.setItem('date_start', '{self.start_date}');")
         self.driver.execute_script(f"window.localStorage.setItem('date_end', '{self.end_date}');")
+
+    def apply_configs(self) -> None:
         self.driver.execute_script("window.location.reload();")
         time.sleep(5)
         try:
@@ -206,16 +208,8 @@ class AnnonceYelloh(Scraping):
             print("Erreur bouton")
             print(e)
         
-    def set_nb_pers(self, nb_pers) -> None:
-        self.driver.execute_script(f"window.localStorage.setItem('nb_personnes_label', {nb_pers}');")
-        self.driver.execute_script("window.location.reload();")
-        time.sleep(5)
-        try:
-            self.driver.find_element(By.XPATH, '//button[@aria-label="Voir prix et disponibilités"]').click()
-            WebDriverWait(self.driver, 5)
-        except Exception as e:
-            print("Erreur bouton")
-            print(e)
+    def set_nb_pers(self, nb_script) -> None:
+        self.driver.execute_script(nb_script)
 
     def extract(self) -> None:
         for i in range(5):
@@ -240,9 +234,6 @@ class AnnonceYelloh(Scraping):
                             and accomodation.find_all('span', {'class': 'Message-title'})[0].text.strip() == 'Disponible' \
                         else False
 
-            print(accomodation.find('div', {'class': 'AccommodationAvailabilityBlock-line'}).text.strip())
-            print("Disponible: ", available)
-
             if available:
                 data = {}
                 data["web_scraper_order"] = ""
@@ -261,10 +252,13 @@ class AnnonceYelloh(Scraping):
                 data["n_offres"] = re.sub(r"[^(\d)]", '', accomodation.find(
                     "a", class_="AccomodationBlock-actionBtn", href=True)["href"])
                 data["date_debut_jour"] = ""
-                data["typologie"] = accomodation.find(
-                    "div", class_="AccommodationDetails-characs--persons").text.strip()
-                data["nb_semaine"] = ""
-                print(data)
+
+                typos = accomodation.find_all("span", class_="AccommodationDetails-characs")
+                typos_values = " ".join(list(map(lambda x: x.text.strip(), typos))[0:3])
+                typo_pers = accomodation.find("div", class_="AccommodationDetails-characs--persons").text.strip()
+                data["typologie"] = typos_values + typo_pers + " pers"
+
+                data["nb_semaine"] = datetime.strptime(self.start_date, '%d/%m/%Y').isocalendar()[1]
                 self.data_container.append(data)
 
     def save(self):
@@ -306,13 +300,16 @@ class YellohScraper(Scraper):
                 c.set_interval(self.start_date, self.end_date)
                 c.scrap()
                 time.sleep(5)
-                c.set_configs()
-
-               # for nb in ['4+ pers', '6+ pers', '8+ pers']:
-               #     c.set_nb_pers(nb)
-                time.sleep(5)
-                c.extract()
-                c.save()
+                c.set_dates()
+                for nb in [
+                    "window.localStorage.setItem('nb_personnes_label', '4+ pers');",
+                    "window.localStorage.setItem('nb_personnes_label', '6+ pers');",
+                    "window.localStorage.setItem('nb_personnes_label', '8+ pers');"]:
+                    c.set_nb_pers(nb)
+                    c.apply_configs()
+                    time.sleep(5)
+                    c.extract()
+                    c.save()
                 
                 self.set_history('last_index', index)
                 # c.increment_counter()
@@ -373,6 +370,7 @@ def yelloh_main():
             y = YellohScraper()
             y.set_destinations(f'{data_folder}/{args.destinations}')
             y.set_interval(args.start_date, args.end_date)
+            y.set_week_scrap(args.date_price)
             y.set_logfile('yellohvillage', f'a_{args.log}', args.date_price)
             y.start()
 
