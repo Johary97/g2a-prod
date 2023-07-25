@@ -230,3 +230,12 @@ class Scraper(object):
     @abstractmethod
     def start(self) -> None:
         pass
+
+    def set_logfile(self, site, filename, date_scrap):
+        logpath = f"{os.environ.get('LOGS')}/{site}/{date_scrap.replace('/', '_')}"
+        logfile = f"{logpath}/{filename}.json"
+
+        if not os.path.exists(logpath):
+            os.makedirs(logpath)
+
+        self.log = logfile

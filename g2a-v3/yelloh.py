@@ -25,6 +25,8 @@ from scraping import Scraping, Scraper
 from tools.args import main_arguments, ARGS_INFO, check_arguments
 import dotenv
 from tools.changeip import refresh_connection
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
 
 SEARCH_BTN = "#mm-1 > div.main > div:nth-child(2) > header > div.Header-container.Container > div:nth-child(1) > button:nth-child(3)"
 SEARCH_OPTIONLIST = "#mm-1 > div.main > div:nth-child(2) > header > div.Header-search > div > form > div.Search-wrapper.Search-wrapper--larger > div.Search-autocompleteDropdown > div.Search-autocompleteBox.Search-autocompletePart > div > button"
@@ -160,7 +162,7 @@ class YellohDestinationScraper(Scraping):
             self.execute()
 
 
-class AnnonceYellohScraper(Scraping):
+class AnnonceYelloh(Scraping):
 
     def __init__(self) -> None:
         super().__init__()
@@ -188,14 +190,41 @@ class AnnonceYellohScraper(Scraping):
     def set_week_scrap(self, date: str) -> None:
         self.week_scrap = date
 
-    def set_dates(self, start_date: str, end_date: str):
+    def set_interval(self, start_date: str, end_date: str):
+        self.start_date = start_date
+        self.end_date = end_date
+
+    def set_configs(self) -> None:
+        self.driver.execute_script(f"window.localStorage.setItem('date_start', '{self.start_date}');")
+        self.driver.execute_script(f"window.localStorage.setItem('date_end', '{self.end_date}');")
+        self.driver.execute_script("window.localStorage.setItem('nb_personnes_label', '4+ pers');")
+        self.driver.execute_script("window.location.reload();")
+        time.sleep(5)
+        try:
+            self.driver.find_element(By.XPATH, '//button[@aria-label="Voir prix et disponibilités"]').click()
+            WebDriverWait(self.driver, 5)
+        except Exception as e:
+            print("Erreur bouton")
+            print(e)       
+
+    def set_dates(self):
         self.driver.execute_script(
-            f"window.localStorage.setItem('date_start', {start_date});)")
+            "window.localStorage.setItem('date_start', '29/07/2023');)")
         self.driver.execute_script(
-            f"window.localStorage.setItem('date_end', {end_date});)")
+            "window.localStorage.setItem('date_end', '05/08/2023');)")
         self.driver.execute_script("window.location.reload();")
 
     def extract(self) -> None:
+        for i in range(5):
+            self.driver.find_element(By.CSS_SELECTOR, 'body').send_keys(Keys.PAGE_DOWN)
+            time.sleep(2)
+
+        for i in range(5):
+            self.driver.find_element(By.CSS_SELECTOR, 'body').send_keys(Keys.PAGE_UP)
+            time.sleep(2)
+
+        time.sleep(10)
+        
         soupe = BeautifulSoup(self.driver.page_source, "lxml")
         accomodationContainer = soupe.find('section', class_='AccommodationList').find(
             'ul', 'Container-accommodation')
@@ -203,30 +232,111 @@ class AnnonceYellohScraper(Scraping):
             'article', class_='AccomodationBlock')
 
         for accomodation in accomodations:
-            data = {}
-            data["web_scraper_order"] = ""
-            data["name"] = soupe.find(
-                'span', class_="SectionHeadVillage-name").text.strip()
-            data["locality"] = soupe.find(
-                'p', class_="SectionHeadVillage-location").text.strip()
-            data["date_price"] = datetime.now().strftime("%d/%m/%Y")
-            data["date_debut"] = self.driver.execute_script(
-                "return window.localStorage.getItem('date_start');")
-            data["date_fin"] = self.driver.execute_script(
-                "return window.localStorage.getItem('date_end');")
-            data["prix_actuel"] = re.sub(r"[^(\d)]", '', accomodation.find(
-                "p", class_="PriceTag-finalPrice").text.strip())
-            data["prix_init"] = data["prix_actuel"]
-            data["n_offres"] = re.sub(r"[^(\d)]", '', accomodation.find(
-                "a", class_="AccomodationBlock-actionBtn", href=True)["href"])
-            data["date_debut_jour"] = ""
-            data["typologie"] = accomodation.find(
-                "div", class_="AccommodationDetails-characs--persons").text.strip()
-            data["nb_semaine"] = ""
-            self.data_container.append(data)
+            available = True \
+                        if len(accomodation.find_all('span', {'class': 'Message-title'})) \
+                            and accomodation.find_all('span', {'class': 'Message-title'})[0].text.strip() == 'Disponible' \
+                        else False
+
+            print(accomodation.find('div', {'class': 'AccommodationAvailabilityBlock-line'}).text.strip())
+            print("Disponible: ", available)
+
+            if available:
+                data = {}
+                data["web_scraper_order"] = ""
+                data["name"] = soupe.find(
+                    'span', class_="SectionHeadVillage-name").text.strip()
+                data["locality"] = soupe.find(
+                    'p', class_="SectionHeadVillage-location").text.strip()
+                data["date_price"] = self.week_scrap
+                data["date_debut"] = self.driver.execute_script(
+                    "return window.localStorage.getItem('date_start');")
+                data["date_fin"] = self.driver.execute_script(
+                    "return window.localStorage.getItem('date_end');")
+                data["prix_actuel"] = re.sub(r"[^(\d)]", '', accomodation.find(
+                    "p", class_="PriceTag-finalPrice").text.strip())
+                data["prix_init"] = data["prix_actuel"]
+                data["n_offres"] = re.sub(r"[^(\d)]", '', accomodation.find(
+                    "a", class_="AccomodationBlock-actionBtn", href=True)["href"])
+                data["date_debut_jour"] = ""
+                data["typologie"] = accomodation.find(
+                    "div", class_="AccommodationDetails-characs--persons").text.strip()
+                data["nb_semaine"] = ""
+                print(data)
+                self.data_container.append(data)
 
     def save(self):
         pass
+
+
+class YellohScraper(Scraper):
+    def __init__(self,) -> None:
+        super().__init__()
+        self.urls = []
+        self.storage = ''
+        self.log = ''
+        self.week_scrap = ''
+
+    def set_destinations(self, filename: str) -> None:
+        with open(filename, 'r') as infile:
+            self.urls = json.load(infile)
+
+    def set_log(self, log):
+        self.log = log
+
+    def set_week_scrap(self, date: str) -> None:
+        self.week_scrap = date
+
+    def set_interval(self, start_date: str, end_date: str):
+        self.start_date = start_date
+        self.end_date = end_date
+    
+    def start(self) -> None:
+        c = AnnonceYelloh()
+        c.set_week_scrap(self.week_scrap)
+        last_index = self.get_history('last_index')
+        # c.set_driver_interval(300, 500)
+        for index in range(last_index + 1, len(self.urls)):
+            try:
+                print(index+1, ' / ', len(self.urls))
+                c.set_url(self.urls[index])
+                c.set_interval(self.start_date, self.end_date)
+                c.scrap()
+                time.sleep(5)
+                c.set_configs()
+                time.sleep(5)
+                c.extract()
+                c.save()
+                self.set_history('last_index', index)
+                # c.increment_counter()
+            except Exception as e:
+                print(e)
+                c.driver.quit()
+                break
+        
+        c.driver.quit()
+
+    def get_history(self, key: str) -> object:
+        logs = {}
+        try:
+            with open(self.log, 'r') as log_file:
+                logs = json.load(log_file)
+                return logs[key]
+        except:
+            return -1
+
+    def set_history(self, key: str, value: object) -> None:
+        log = {}
+        try:
+            if os.path.exists(self.log):
+                with open(self.log, 'r') as log_file:
+                    log = json.load(log_file)
+
+            log[key] = value
+
+            with open(self.log, 'w') as log_file:
+                log_file.write(json.dumps(log, indent=4))
+        except:
+            return
 
 
 def yelloh_main():
@@ -252,11 +362,11 @@ def yelloh_main():
 
         if not len(miss):
 
-            y = AnnonceYellohScraper(
-                f'{data_folder}/{args.destinations}', args.date_price)
+            y = YellohScraper()
+            y.set_destinations(f'{data_folder}/{args.destinations}')
             y.set_interval(args.start_date, args.end_date)
             y.set_logfile('yellohvillage', f'a_{args.log}', args.date_price)
-            y.execute()
+            y.start()
 
         else:
             raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")
