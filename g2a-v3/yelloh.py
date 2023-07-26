@@ -257,7 +257,7 @@ class AnnonceYelloh(Scraping):
                 typos = accomodation.find_all("span", class_="AccommodationDetails-characs")
                 typos_values = " ".join(list(map(lambda x: x.text.strip(), typos))[0:3])
                 typo_pers = accomodation.find("div", class_="AccommodationDetails-characs--persons").text.strip()
-                data["typologie"] = typos_values + typo_pers + " pers"
+                data["typologie"] = typos_values + typo_pers + " personnes"
 
                 data["Nb semaines"] = datetime.strptime(self.start_date, '%d/%m/%Y').isocalendar()[1]
                 data["cle_station"] = ""
