@@ -136,8 +136,11 @@ class G2A:
             column_order = ['web-scrapper-order', 'date_price', 'date_debut', 'date_fin', 'prix_init', 'prix_actuel',
                             'typologie', 'n_offre', 'nom', 'localite', 'date_debut-jour', 'Nb semaines', 'cle_station', 'nom_station']
             result = ""
-            url = item['url'].replace('&', '$')[8:]
-            item.pop('url')
+            url = ""
+
+            if 'url' in item.keys():
+                url = item['url'].replace('&', '$')[8:]
+                item.pop('url')
 
             for column in column_order:
                 v = str(item[column]).replace(',', ' - ').replace('&', ' and ')

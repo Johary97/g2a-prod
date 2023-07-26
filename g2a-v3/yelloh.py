@@ -172,8 +172,9 @@ class AnnonceYelloh(Scraping):
         self.website_name = 'yellow_village'
         self.website_url = 'www.yellohvillage.fr'
         self.scrap_finished = False
-        self.data_container = []
+        self.data = []
         self.navigate_init_page()
+        self.nights = "7"
 
     def navigate_init_page(self) -> None:
         self.driver.get("https://www.yellohvillage.fr/destination/mer")
@@ -236,10 +237,10 @@ class AnnonceYelloh(Scraping):
 
             if available:
                 data = {}
-                data["web_scraper_order"] = ""
-                data["name"] = soupe.find(
+                data["web-scrapper-order"] = ""
+                data["nom"] = soupe.find(
                     'span', class_="SectionHeadVillage-name").text.strip()
-                data["locality"] = soupe.find(
+                data["localite"] = soupe.find(
                     'p', class_="SectionHeadVillage-location").text.strip()
                 data["date_price"] = self.week_scrap
                 data["date_debut"] = self.driver.execute_script(
@@ -249,20 +250,21 @@ class AnnonceYelloh(Scraping):
                 data["prix_actuel"] = re.sub(r"[^(\d)]", '', accomodation.find(
                     "p", class_="PriceTag-finalPrice").text.strip())
                 data["prix_init"] = data["prix_actuel"]
-                data["n_offres"] = re.sub(r"[^(\d)]", '', accomodation.find(
+                data["n_offre"] = re.sub(r"[^(\d)]", '', accomodation.find(
                     "a", class_="AccomodationBlock-actionBtn", href=True)["href"])
-                data["date_debut_jour"] = ""
+                data["date_debut-jour"] = ""
 
                 typos = accomodation.find_all("span", class_="AccommodationDetails-characs")
                 typos_values = " ".join(list(map(lambda x: x.text.strip(), typos))[0:3])
                 typo_pers = accomodation.find("div", class_="AccommodationDetails-characs--persons").text.strip()
                 data["typologie"] = typos_values + typo_pers + " pers"
 
-                data["nb_semaine"] = datetime.strptime(self.start_date, '%d/%m/%Y').isocalendar()[1]
-                self.data_container.append(data)
+                data["Nb semaines"] = datetime.strptime(self.start_date, '%d/%m/%Y').isocalendar()[1]
+                data["cle_station"] = ""
+                data["nom_station"] = data['localite']
+                data["url"] = self.driver.current_url
 
-    def save(self):
-        pass
+                self.data.append(data)
 
 
 class YellohScraper(Scraper):
@@ -286,6 +288,12 @@ class YellohScraper(Scraper):
     def set_interval(self, start_date: str, end_date: str):
         self.start_date = start_date
         self.end_date = end_date
+
+    def prepare(self) -> None:
+        print("Préparation ...")
+        dates_saturday = [date.to_pydatetime().strftime("%d/%m/%Y") for date in pd.bdate_range(start=self.start_date, end=self.end_date, freq="C", weekmask='Sat')]
+        dates_sunday = [date.to_pydatetime().strftime("%d/%m/%Y") for date in pd.bdate_range(start=self.start_date, end=self.end_date, freq="C", weekmask='Sun')]
+        self.dates = dates_saturday + dates_sunday
     
     def start(self) -> None:
         c = AnnonceYelloh()
@@ -297,19 +305,23 @@ class YellohScraper(Scraper):
                 print(index+1, ' / ', len(self.urls))
                 c.set_url(self.urls[index])
                 print("***** ", c.url, " *****")
-                c.set_interval(self.start_date, self.end_date)
-                c.scrap()
-                time.sleep(5)
-                c.set_dates()
-                for nb in [
-                    "window.localStorage.setItem('nb_personnes_label', '4+ pers');",
-                    "window.localStorage.setItem('nb_personnes_label', '6+ pers');",
-                    "window.localStorage.setItem('nb_personnes_label', '8+ pers');"]:
-                    c.set_nb_pers(nb)
-                    c.apply_configs()
+                for d in self.dates:
+                    begin = d
+                    end = datetime.strftime(datetime.strptime(d, "%d/%m/%Y") + timedelta(days=7), "%d/%m/%Y")
+                    print("Dates %s -> %s"% (begin, end))
+                    c.set_interval(begin, end)
+                    c.scrap()
                     time.sleep(5)
-                    c.extract()
-                    c.save()
+                    c.set_dates()
+                    for nb in [
+                        "window.localStorage.setItem('nb_personnes_label', '4+ pers');",
+                        "window.localStorage.setItem('nb_personnes_label', '6+ pers');",
+                        "window.localStorage.setItem('nb_personnes_label', '8+ pers');"]:
+                        c.set_nb_pers(nb)
+                        c.apply_configs()
+                        time.sleep(5)
+                        c.extract()
+                        c.save()
                 
                 self.set_history('last_index', index)
                 # c.increment_counter()
@@ -372,6 +384,7 @@ def yelloh_main():
             y.set_interval(args.start_date, args.end_date)
             y.set_week_scrap(args.date_price)
             y.set_logfile('yellohvillage', f'a_{args.log}', args.date_price)
+            y.prepare()
             y.start()
 
         else:
