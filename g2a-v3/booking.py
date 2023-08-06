@@ -121,6 +121,7 @@ class BookingScraper(Scraper):
         self.week_scrap = ''
         self.code = og.create_code()
         self.set_logfile()
+        self.max_cycle = 140
 
     def get_next_monday(self):
         next_monday = datetime.now() + timedelta(7 - datetime.now().weekday() or 7)
@@ -177,7 +178,7 @@ class BookingScraper(Scraper):
             except Exception as e:
                 print(e)
                 break
-            if counter == 10:
+            if counter == self.max_cycle:
                 refresh_connection()
                 counter = 0
 
@@ -217,6 +218,9 @@ class BookingScraper(Scraper):
             os.makedirs(logpath)
 
         self.log = logfile
+
+    def set_cycle(self, number) -> None:
+        self.max_cycle = number
 
 
 class CleanBooking(object):
@@ -332,6 +336,10 @@ def booking_main():
                                args.frequency)
             b.set_destids(args.destinations)
             b.set_week_scrap(args.date_price)
+
+            if args.cycle:
+                b.set_cycle(int(args.cycle))
+
             b.initialize()
             b.start()
 
