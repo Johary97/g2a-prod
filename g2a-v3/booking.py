@@ -52,7 +52,7 @@ class AnnonceBooking(Scraping):
             time.sleep(randrange(2, 4, 1))
             soupe = BeautifulSoup(self.driver.page_source, 'lxml')
 
-            header = soupe.find('div', {'data-capla-component': 'b-search-web-searchresults/HeaderDesktop'}).find('h1').text.strip()
+            header = soupe.find('div', {'data-component': 'arp-header'}).find('h1').text.strip() if soupe.find('div', {'data-component': 'arp-header'}) else soupe.find('h1', {'class': 'fcab3ed991'}).text.strip()
             region_name = header.split(':')[0]
             region_key = parse_qs(urlparse(self.driver.current_url).query)['dest_id'][0]
 
@@ -162,6 +162,7 @@ class BookingScraper(Scraper):
         instance.set_nights(self.frequency)
 
         last_scraped = self.get_history('last_scraped')
+        counter = 0
 
         for last_url in range(last_scraped + 1, len(self.urls)):
             try:
@@ -171,9 +172,14 @@ class BookingScraper(Scraper):
                 instance.scrap()
                 instance.extract()
                 instance.save()
+                counter += 1
                 self.set_history('last_scraped', last_url)
             except Exception as e:
+                print(e)
                 break
+            if counter == 10:
+                refresh_connection()
+                counter = 0
 
         last_url = self.get_history('last_scraped')
         
