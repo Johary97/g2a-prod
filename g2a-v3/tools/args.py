@@ -45,7 +45,7 @@ ARGS_INFO = {
         '-l': {'long': '--log-file', 'dest': 'log', "help": "Nom du fichier log"},
         '-w': {'long': '--week-scrap', 'dest': 'date_price', "help": "Date du lundi de la semaine à scraper"},
         '-s': {'long': '--stations', 'dest': 'stations', "help": "Nom du fichier contenant la liste des stations ou regions"},
-        '-c': {'long': '--cycle', 'dest': 'cycle', 'help': "Cycle de scrap, la connexion sera réinitialisée à chaque fin de cycle."}
+        '-c': {'long': '--cycle', 'dest': 'cycle', 'help': "Cycle de scrap, la connexion sera réinitialisée à chaque fin de cycle."},
         '-fp': {'long': '--principal-program', 'dest': 'principal', 'help': "Seul le programme principale peut changer l'adresse IP."}
     }
 
