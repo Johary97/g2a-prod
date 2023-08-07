@@ -14,17 +14,24 @@ def activate_deactivate_connection(connection_id, status):
 def refresh_connection():
     dotenv.load_dotenv()
     connection_id = os.environ.get('CONNECTION_ID')
+    system_name = os.environ.get('SYSTEM')
 
-    try:
-        print("Déconnexion ...")
-        activate_deactivate_connection(connection_id,"down")
-        time.sleep(5)
-    except :
-        pass
+    if system_name == 'linux':
+        try:
+            print("Déconnexion ...")
+            activate_deactivate_connection(connection_id,"down")
+            time.sleep(5)
+        except :
+            pass
 
-    try:
-        print("Reconnexion ...")
-        activate_deactivate_connection(connection_id,"up")
-        time.sleep(5)
-    except:
-        pass
+        try:
+            print("Reconnexion ...")
+            activate_deactivate_connection(connection_id,"up")
+            time.sleep(5)
+        except:
+            pass
+
+    if system_name == 'windows':
+        print('\n********************************************************************************')
+        print(input('\n**** Veuillez changer d\'adresse IP puis appuiez sur la touche "Entrer" (ici) **** \n'))
+

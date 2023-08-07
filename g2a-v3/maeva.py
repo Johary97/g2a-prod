@@ -27,6 +27,7 @@ import socket
 from selenium.webdriver.remote.command import Command
 from scraping import Scraping
 from tools.args import main_arguments, check_arguments
+from tools.changeip import refresh_connection
 
 """DestinationListMaeva: Classe utilisée pour récupérer la liste des destinations d'une station"""
 
@@ -132,6 +133,7 @@ class AnnonceMaeva(Scraping):
 
     def execute(self):
         try:
+            self.create_file()
             return self.scrap()
         except Exception as e:
             print(e)
@@ -156,7 +158,9 @@ class AnnonceMaeva(Scraping):
 
         self.extract()
 
+        print("Saving ...")
         self.save()
+        self.save_data()
 
     def set_price_date(self, price_date):
         self.price_date = price_date
@@ -257,7 +261,10 @@ class MaevaDestinationScraper:
         self.last_date = datetime.strptime(l_date, '%d/%m/%Y')
 
     def set_log(self, log):
-        self.log = log
+        self.log = f'{log}.json'
+
+    def set_output(self, name):
+        self.output = f'{name}.csv'
 
     def generate_urls(self, index=0):
 
@@ -302,10 +309,14 @@ class MaevaDestinationScraper:
 
     def start(self):
         last_index = self.load_history('last_destination_index')
+        refresh_connection()
+
+        counter = 0
 
         try:
             instance = AnnonceMaeva()
             instance.set_price_date(self.date_price)
+            instance.set_storage(self.output)
 
             for index in range(last_index+1, len(self.destination_list)):
                 print(
@@ -317,6 +328,12 @@ class MaevaDestinationScraper:
                     print(f"Week {urls.index(url)+1}/{len(urls)}")
                     instance.set_url(url)
                     instance.execute()
+
+                    counter += 1
+
+                    if counter == 300:
+                        refresh_connection()
+                        counter = 0
 
                 self.save_history(index, 'last_destination_index')
 
@@ -347,7 +364,7 @@ class MaevaDestinationInitializer:
         self.log = 'logs.json'
 
     def set_log(self, log):
-        self.log = log
+        self.log = f'{log}.json'
 
     def save_history(self, index, log_key):
         logs = {}
@@ -467,25 +484,30 @@ def maeva_main():
 
     data_folder = os.environ.get('STATICS_FOLDER')
     log_folder = os.environ.get('LOGS')
+    output_folder = os.environ.get('OUTPUT_FOLDER')
 
     args = main_arguments()
 
     date_scrap = args.date_price
 
     log_path = f"{log_folder}/maeva/{date_scrap.replace('/', '_')}"
+    output_path = f"{output_folder}/maeva/{date_scrap.replace('/', '_')}"
 
     if not os.path.exists(log_path):
         os.makedirs(log_path)
 
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
     if args.action and args.action == 'init':
 
-        miss = check_arguments(args, ['-d', '-s', '-l'])
+        miss = check_arguments(args, ['-d', '-s', '-n'])
 
         if not len(miss):
 
             m = MaevaDestinationInitializer(
                 f'{data_folder}/{args.destinations}', f'{data_folder}/{args.stations}')
-            m.set_log(f'{log_path}/d_{args.log}')
+            m.set_log(f'{log_path}/d_{args.name}')
             m.start()
 
         else:
@@ -493,14 +515,15 @@ def maeva_main():
 
     if args.action and args.action == 'start':
 
-        miss = check_arguments(args, ['-d', '-b', '-e', '-l'])
+        miss = check_arguments(args, ['-d', '-b', '-e', '-n'])
 
         if not len(miss):
 
             m = MaevaDestinationScraper(
                 f'{data_folder}/{args.destinations}', args.date_price)
             m.set_interval(args.start_date, args.end_date)
-            m.set_log(f'{log_path}/{args.log}')
+            m.set_log(f'{log_path}/{args.name}')
+            m.set_output(f'{output_path}/{args.name}')
             m.start()
 
         else:

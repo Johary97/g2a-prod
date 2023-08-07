@@ -26,6 +26,7 @@ import socket
 from selenium.webdriver.remote.command import Command
 from tools.g2a import G2A
 from tools.changeip import refresh_connection
+import csv
 
 
 class Scraping(object):
@@ -125,6 +126,7 @@ class Scraping(object):
         self.log = logfile
 
     def execute(self) -> None:
+        self.create_file()
         for url in self.urls:
             try:
                 self.set_url(url)
@@ -132,6 +134,7 @@ class Scraping(object):
                 time.sleep(2)
                 self.extract()
                 self.save()
+                self.save_data()
             except Exception as e:
                 print(e)
                 self.driver.quit()
@@ -157,25 +160,26 @@ class Scraping(object):
         pass
 
     def create_file(self) -> None:
-        with open(f"{self.storage_file}", 'w', encoding="utf-16") as file:
-            fields_name = [
-                'web-scrapper-order',
-                'date_price',
-                'date_debut',
-                'date_fin',
-                'prix_init',
-                'prix_actuel',
-                'typologie',
-                'n_offre',
-                'nom',
-                'localite',
-                'date_debut-jour',
-                'Nb semaines',
-                'cle_station',
-                'nom_station'
-            ]
-            writers = writer(file)
-            writers.writerow(fields_name)
+        if not os.path.exists(f"{self.storage_file}"):
+            with open(f"{self.storage_file}", 'w') as file:
+                fields_name = [
+                    'web-scrapper-order',
+                    'date_price',
+                    'date_debut',
+                    'date_fin',
+                    'prix_init',
+                    'prix_actuel',
+                    'typologie',
+                    'n_offre',
+                    'nom',
+                    'localite',
+                    'date_debut-jour',
+                    'Nb semaines',
+                    'cle_station',
+                    'nom_station'
+                ]
+                writers = writer(file)
+                writers.writerow(fields_name)
 
     def save(self) -> None:
 
@@ -188,6 +192,41 @@ class Scraping(object):
                 "data_content": str_datas
             })
             print(res)
+
+    def save_data(self) -> bool:
+        
+        """ function to append data at the excel file """
+        # return True
+        # print(self.data)
+        if len(self.data):
+            try:
+                field_names = [
+                            'web-scrapper-order',
+                            'date_price',
+                            'date_debut', 
+                            'date_fin',
+                            'prix_init',
+                            'prix_actuel',
+                            'typologie',
+                            'n_offre',
+                            # 'stars',
+                            'nom',
+                            'localite',
+                            'date_debut-jour',
+                            'Nb semaines',
+                            'cle_station',
+                            'nom_station'
+                        ]
+
+                with open(self.storage_file, 'a', newline='') as f_object:
+                    dictwriter_object = csv.DictWriter(f_object, fieldnames=field_names)
+                    dictwriter_object.writerows(self.data)
+                    return True
+            except Exception as e:
+                print(e)
+                with open('SaveDataError.txt', 'a') as file:
+                    file.write(f"{e}")
+                    return False  
 
     def get_history(self, key: str) -> object:
         logs = {}
