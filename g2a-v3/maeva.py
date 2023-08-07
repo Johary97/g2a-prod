@@ -246,6 +246,7 @@ class MaevaDestinationScraper:
     def __init__(self, dest_list_source, date_price):
         self.dests = {}
         self.destination_list = []
+        self.principal = False
 
         if dest_list_source:
             with open(dest_list_source, 'r') as openfile:
@@ -265,6 +266,9 @@ class MaevaDestinationScraper:
 
     def set_output(self, name):
         self.output = f'{name}.csv'
+
+    def set_to_principal(self):
+        self.principal = True
 
     def generate_urls(self, index=0):
 
@@ -309,7 +313,9 @@ class MaevaDestinationScraper:
 
     def start(self):
         last_index = self.load_history('last_destination_index')
-        refresh_connection()
+        
+        if self.principal:
+            refresh_connection()
 
         counter = 0
 
@@ -329,11 +335,11 @@ class MaevaDestinationScraper:
                     instance.set_url(url)
                     instance.execute()
 
-                    counter += 1
-
-                    if counter == 300:
-                        refresh_connection()
-                        counter = 0
+                    if self.principal:
+                        counter += 1
+                        if counter == 300:
+                            refresh_connection()
+                            counter = 0
 
                 self.save_history(index, 'last_destination_index')
 
@@ -524,6 +530,9 @@ def maeva_main():
             m.set_interval(args.start_date, args.end_date)
             m.set_log(f'{log_path}/{args.name}')
             m.set_output(f'{output_path}/{args.name}')
+            if args.principal:
+                m.set_to_principal()
+
             m.start()
 
         else:
