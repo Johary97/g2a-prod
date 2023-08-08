@@ -130,6 +130,7 @@ class AnnonceMaeva(Scraping):
         self.price_date = ''
         self.website_name = "maeva"
         self.website_url = "https://www.maeva.com"
+        self.principal = False
 
     def execute(self):
         try:
@@ -163,12 +164,18 @@ class AnnonceMaeva(Scraping):
             self.save()
             self.save_data()
         except:
-            print("await and refresh ...")
+            if self.principal:
+                refresh_connection()
+                
+            print("Wait and refresh ...")
             time.sleep(5)
             self.scrap()
 
     def set_price_date(self, price_date):
         self.price_date = price_date
+
+    def set_to_principal(self):
+        self.principal = True
 
     def extract(self):
         def link_params(url):
@@ -328,6 +335,9 @@ class MaevaDestinationScraper:
             instance = AnnonceMaeva()
             instance.set_price_date(self.date_price)
             instance.set_storage(self.output)
+
+            if self.principal:
+                instance.set_to_principal()
 
             for index in range(last_index+1, len(self.destination_list)):
                 print(
