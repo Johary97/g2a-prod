@@ -1,0 +1,12 @@
+{
+    "station_key_path": "./stationkey.xlsx",
+    "instances": [
+        {
+            "freq": 1,
+            "last_scrapped_key": 0,
+            "page_index": 0,
+            "last_page_scrapped": 0
+        }
+    ],
+    "interval": [9, 34]
+}

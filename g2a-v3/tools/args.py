@@ -28,6 +28,8 @@ def main_arguments() -> object:
                         default='', help="Chemin de stockage du fichier contenant les resultats")
     parser.add_argument('--week-scrap', '-w', dest='date_price', default=get_monday(), help="Date du lundi de la semaine à scraper format 'dd/mm/YYYY'")
     parser.add_argument('--destinations', '-d', dest='destinations', default='', help="Nom du fichier contenant la liste des destinations")
+    parser.add_argument('--cycle', '-c', dest='cycle', default='', help="Cycle de scrap, la connexion sera réinitialisée à chaque fin de cycle.")
+    parser.add_argument('--principal-program','-fp', dest='principal', default=None, help="Seul le programme principale peut changer l'adresse IP.")
     return parser.parse_args()
 
 
@@ -43,6 +45,8 @@ ARGS_INFO = {
         '-l': {'long': '--log-file', 'dest': 'log', "help": "Nom du fichier log"},
         '-w': {'long': '--week-scrap', 'dest': 'date_price', "help": "Date du lundi de la semaine à scraper"},
         '-s': {'long': '--stations', 'dest': 'stations', "help": "Nom du fichier contenant la liste des stations ou regions"},
+        '-c': {'long': '--cycle', 'dest': 'cycle', 'help': "Cycle de scrap, la connexion sera réinitialisée à chaque fin de cycle."},
+        '-fp': {'long': '--principal-program', 'dest': 'principal', 'help': "Seul le programme principale peut changer l'adresse IP."}
     }
 
 def check_arguments(args, required):

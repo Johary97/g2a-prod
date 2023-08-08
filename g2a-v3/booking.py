@@ -15,6 +15,9 @@ import argparse
 from tools.args import main_arguments, check_arguments
 import sys
 import json
+from tools.changeip import refresh_connection
+import csv
+from tools.g2a import G2A
 
 
 class AnnonceBooking(Scraping):
@@ -51,7 +54,7 @@ class AnnonceBooking(Scraping):
             time.sleep(randrange(2, 4, 1))
             soupe = BeautifulSoup(self.driver.page_source, 'lxml')
 
-            header = soupe.find('div', {'data-capla-component': 'b-search-web-searchresults/HeaderDesktop'}).find('h1').text.strip()
+            header = soupe.find('div', {'data-component': 'arp-header'}).find('h1').text.strip() if soupe.find('div', {'data-component': 'arp-header'}) else soupe.find('h1', {'class': 'fcab3ed991'}).text.strip()
             region_name = header.split(':')[0]
             region_key = parse_qs(urlparse(self.driver.current_url).query)['dest_id'][0]
 
@@ -119,6 +122,8 @@ class BookingScraper(Scraper):
         self.urls = []
         self.week_scrap = ''
         self.code = og.create_code()
+        self.set_logfile()
+        self.max_cycle = 140
 
     def get_next_monday(self):
         next_monday = datetime.now() + timedelta(7 - datetime.now().weekday() or 7)
@@ -133,9 +138,6 @@ class BookingScraper(Scraper):
     def set_destids(self, filename):
         df = pd.read_csv(f"{os.environ.get('STATICS_FOLDER')}/{filename}")
         self.destids = df['dest_id']
-
-    def set_logfile(self, log):
-        self.log = log
 
     def initialize(self) -> None:
 
@@ -157,18 +159,13 @@ class BookingScraper(Scraper):
             checkout += timedelta(days=1)
 
     def start(self) -> None:
+        refresh_connection()
         instance = AnnonceBooking()
-        logpath = f"{os.environ.get('LOGS')}/booking/{self.week_scrap.replace('/', '_')}/{self.frequency}j"
-        logfile = f"{logpath}/{self.name}_{self.frequency}j_{self.start_date.replace('/', '_')}-{self.end_date.replace('/', '_')}.json"
-
-        if not os.path.exists(logpath):
-            os.makedirs(logpath)
-
         instance.set_week_scrap(self.week_scrap)
         instance.set_nights(self.frequency)
 
-        self.set_logfile(logfile)
         last_scraped = self.get_history('last_scraped')
+        counter = 0
 
         for last_url in range(last_scraped + 1, len(self.urls)):
             try:
@@ -178,10 +175,19 @@ class BookingScraper(Scraper):
                 instance.scrap()
                 instance.extract()
                 instance.save()
+                counter += 1
                 self.set_history('last_scraped', last_url)
             except Exception as e:
                 print(e)
-                sys.exit("Arrêt!")
+                break
+            if counter == self.max_cycle:
+                refresh_connection()
+                counter = 0
+
+        last_url = self.get_history('last_scraped')
+        
+        if last_url < len(self.urls) - 1:
+            self.start()
 
     def get_history(self, key: str) -> object:
         logs = {}
@@ -191,6 +197,87 @@ class BookingScraper(Scraper):
                 return logs[key]
         except:
             return -1
+
+    def set_history(self, key: str, value: int) -> None:
+        log = {}
+        if os.path.exists(self.log):
+            try:
+                with open(self.log, 'r') as log_file:
+                    log = json.load(log_file)
+            except:
+                pass
+
+        log[key] = value
+
+        with open(self.log, 'w') as log_file:
+            log_file.write(json.dumps(log, indent=4))
+
+    def set_logfile(self):
+        logpath = f"{os.environ.get('LOGS')}/booking/{self.week_scrap.replace('/', '_')}/{self.frequency}j"
+        logfile = f"{logpath}/{self.name}_{self.frequency}j_{self.start_date.replace('/', '_')}-{self.end_date.replace('/', '_')}.json"
+
+        if not os.path.exists(logpath):
+            os.makedirs(logpath)
+
+        self.log = logfile
+
+    def set_cycle(self, number) -> None:
+        self.max_cycle = number
+
+
+class CSVUploader(object):
+
+    def __init__(self, freq: str, source: str, log: str) -> None:
+        self.freq = freq
+        self.source = source
+        self.log = log
+
+    def upload(self):
+      
+        rows = []
+
+        with open(self.source, encoding='utf-8') as csvf:
+            
+            csvReader = csv.DictReader(csvf)
+            listrow = list(csvReader)
+
+            start = self.get_history('last')
+
+            for i in range(start, len(listrow)):
+
+                listrow[i]['cle_station'] = ""
+                listrow[i]['nom_station'] = ""
+
+                rows.append(listrow[i])
+
+                self.set_history('lastrow', i)
+
+                if len(rows) == 50 or i == len(listrow)-1:
+                    try:
+                        str_data = G2A.format_data(rows)
+                        # print(str_data)
+                        res = G2A.post_accommodation("accommodations/multi", {
+                            "nights": self.freq,
+                            "website_name": 'booking',
+                            "website_url": "https://www.booking.com",
+                            "data_content": str_data
+                        })
+                        print(res)
+                    except Exception as e:
+                        print(e)
+                        time.sleep(5)
+                        self.upload()
+                    
+                    rows = []
+
+    def get_history(self, key: str) -> object:
+        logs = {}
+        try:
+            with open(self.log, 'r') as log_file:
+                logs = json.load(log_file)
+                return logs[key]
+        except:
+            return 0
 
     def set_history(self, key: str, value: int) -> None:
         log = {}
@@ -294,9 +381,7 @@ def booking_main():
 
     dotenv.load_dotenv()
 
-    data_folder = os.environ.get('STATICS_FOLDER')
     log_folder = os.environ.get('LOGS')
-    output_folder = os.environ.get('OUTPUT_FOLDER')
 
     args = main_arguments()
 
@@ -309,6 +394,16 @@ def booking_main():
         else:
             raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")
 
+    if args.action and args.action == 'uploadcsv':
+        miss = check_arguments(args, ['-f','-st', '-l'])
+
+        if not len(miss):
+            up = CSVUploader(freq=args.frequency, source=args.storage, log=args.log)
+            up.upload()
+
+        else:
+            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")        
+
     if args.action and args.action == 'start':
         miss = check_arguments(
             args, ['-n', '-b', '-e', '-l', '-f', '-d'])
@@ -316,18 +411,16 @@ def booking_main():
         if not len(miss):
             date_scrap = args.date_price
 
-            log_path = f"{log_folder}/booking/{date_scrap.replace('/', '_')}"
-
-            if not os.path.exists(log_path):
-                os.makedirs(log_path)
-
             b = BookingScraper(args.name,
                                args.start_date,
                                args.end_date,
                                args.frequency)
             b.set_destids(args.destinations)
             b.set_week_scrap(args.date_price)
-            # b.set_log(f'{log_path}/{args.log}')
+
+            if args.cycle:
+                b.set_cycle(int(args.cycle))
+
             b.initialize()
             b.start()
 

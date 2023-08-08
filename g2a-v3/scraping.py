@@ -25,6 +25,8 @@ from selenium.webdriver.common.keys import Keys
 import socket
 from selenium.webdriver.remote.command import Command
 from tools.g2a import G2A
+from tools.changeip import refresh_connection
+import csv
 
 
 class Scraping(object):
@@ -46,11 +48,11 @@ class Scraping(object):
         in_background and self.firefox_options.add_argument('--headless')
         self.firefox_options.add_argument('--incognito')
 
-        self.driver = webdriver.Firefox(service=FirefoxService(
-                    GeckoDriverManager().install()), options=self.firefox_options)
+       #  self.driver = webdriver.Firefox(service=FirefoxService(
+       #             GeckoDriverManager().install()), options=self.firefox_options)
 
-        # self.driver = webdriver.Chrome(service=ChromeService(
-        #     ChromeDriverManager().install()), options=self.chrome_options)
+        self.driver = webdriver.Chrome(service=ChromeService(
+            ChromeDriverManager(version="114.0.5735.90").install()), options=self.chrome_options)
         self.driver.maximize_window()
         self.drivers = ['chrome', 'firefox']
         self.current_driver = self.drivers[0]
@@ -114,7 +116,17 @@ class Scraping(object):
     def set_storage(self, storage: str) -> None:
         self.storage_file = storage
 
+    def set_logfile(self, site, filename, date_scrap):
+        logpath = f"{os.environ.get('LOGS')}/{site}/{date_scrap.replace('/', '_')}"
+        logfile = f"{logpath}/{filename}.json"
+
+        if not os.path.exists(logpath):
+            os.makedirs(logpath)
+
+        self.log = logfile
+
     def execute(self) -> None:
+        self.create_file()
         for url in self.urls:
             try:
                 self.set_url(url)
@@ -122,6 +134,7 @@ class Scraping(object):
                 time.sleep(2)
                 self.extract()
                 self.save()
+                self.save_data()
             except Exception as e:
                 print(e)
                 self.driver.quit()
@@ -147,25 +160,26 @@ class Scraping(object):
         pass
 
     def create_file(self) -> None:
-        with open(f"{self.storage_file}", 'w', encoding="utf-16") as file:
-            fields_name = [
-                'web-scrapper-order',
-                'date_price',
-                'date_debut',
-                'date_fin',
-                'prix_init',
-                'prix_actuel',
-                'typologie',
-                'n_offre',
-                'nom',
-                'localite',
-                'date_debut-jour',
-                'Nb semaines',
-                'cle_station',
-                'nom_station'
-            ]
-            writers = writer(file)
-            writers.writerow(fields_name)
+        if not os.path.exists(f"{self.storage_file}"):
+            with open(f"{self.storage_file}", 'w') as file:
+                fields_name = [
+                    'web-scrapper-order',
+                    'date_price',
+                    'date_debut',
+                    'date_fin',
+                    'prix_init',
+                    'prix_actuel',
+                    'typologie',
+                    'n_offre',
+                    'nom',
+                    'localite',
+                    'date_debut-jour',
+                    'Nb semaines',
+                    'cle_station',
+                    'nom_station'
+                ]
+                writers = writer(file)
+                writers.writerow(fields_name)
 
     def save(self) -> None:
 
@@ -179,30 +193,63 @@ class Scraping(object):
             })
             print(res)
 
-    def set_history_file(self, filepath: str) -> None:
-        with open(f"{filepath}.json", "w") as file:
-            self.history_file = f"{filepath}.json"
+    def save_data(self) -> bool:
+        
+        """ function to append data at the excel file """
+        # return True
+        # print(self.data)
+        if len(self.data):
+            try:
+                field_names = [
+                            'web-scrapper-order',
+                            'date_price',
+                            'date_debut', 
+                            'date_fin',
+                            'prix_init',
+                            'prix_actuel',
+                            'typologie',
+                            'n_offre',
+                            # 'stars',
+                            'nom',
+                            'localite',
+                            'date_debut-jour',
+                            'Nb semaines',
+                            'cle_station',
+                            'nom_station'
+                        ]
 
-    def set_history(self, key: str) -> None:
+                with open(self.storage_file, 'a', newline='') as f_object:
+                    dictwriter_object = csv.DictWriter(f_object, fieldnames=field_names)
+                    dictwriter_object.writerows(self.data)
+                    return True
+            except Exception as e:
+                print(e)
+                with open('SaveDataError.txt', 'a') as file:
+                    file.write(f"{e}")
+                    return False  
+
+    def get_history(self, key: str) -> object:
         logs = {}
         try:
-            with open('logs.json', 'r') as openfile:
-                logs = json.load(openfile)
+            with open(self.log, 'r') as log_file:
+                logs = json.load(log_file)
+                return logs[key]
         except:
-            pass
-        dest_station_init = logs[key] if key in logs.keys() else []
-        logs[key] = dest_station_init
-        with open('logs.json', 'w') as outfile:
-            outfile.write(json.dumps(logs, indent=4))
+            return -1
 
-    def get_history(self, key: str, value: str) -> object:
-        try:
-            with open('logs.json', 'r') as openfile:
-                logs = json.load(openfile)
-                return logs
-        except:
-            pass
-        return
+    def set_history(self, key: str, value: int) -> None:
+        log = {}
+        if os.path.exists(self.log):
+            try:
+                with open(self.log, 'r') as log_file:
+                    log = json.load(log_file)
+            except:
+                pass
+
+        log[key] = value
+
+        with open(self.log, 'w') as log_file:
+            log_file.write(json.dumps(log, indent=4))
 
     def set_dest(self, new_storage: str) -> None:
         self.storage_file = new_storage
@@ -222,3 +269,12 @@ class Scraper(object):
     @abstractmethod
     def start(self) -> None:
         pass
+
+    def set_logfile(self, site, filename, date_scrap):
+        logpath = f"{os.environ.get('LOGS')}/{site}/{date_scrap.replace('/', '_')}"
+        logfile = f"{logpath}/{filename}.json"
+
+        if not os.path.exists(logpath):
+            os.makedirs(logpath)
+
+        self.log = logfile
