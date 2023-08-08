@@ -142,25 +142,30 @@ class AnnonceMaeva(Scraping):
             sys.exit("Arrêt !!!")
 
     def scrap(self):
-        self.driver.get(self.url)
-        WebDriverWait(self.driver, randint(0, 2))
-        time.sleep(2)
-        while True:
-            try:
-                load_btn = self.driver.find_element(
-                    By.ID, "toaster-cta-voir-plus")
-                if load_btn:
-                    self.driver.execute_script(
-                        "arguments[0].click();", load_btn)
-                    time.sleep(2)
-            except:
-                break
+        try:
+            self.driver.get(self.url)
+            WebDriverWait(self.driver, randint(0, 2))
+            time.sleep(2)
+            while True:
+                try:
+                    load_btn = self.driver.find_element(
+                        By.ID, "toaster-cta-voir-plus")
+                    if load_btn:
+                        self.driver.execute_script(
+                            "arguments[0].click();", load_btn)
+                        time.sleep(2)
+                except:
+                    break
 
-        self.extract()
+            self.extract()
 
-        print("Saving ...")
-        self.save()
-        self.save_data()
+            print("Saving ...")
+            self.save()
+            self.save_data()
+        except:
+            print("await and refresh ...")
+            time.sleep(5)
+            self.scrap()
 
     def set_price_date(self, price_date):
         self.price_date = price_date
