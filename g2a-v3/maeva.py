@@ -342,7 +342,7 @@ class MaevaDestinationScraper:
 
                     if self.principal:
                         counter += 1
-                        if counter == 300:
+                        if counter == 50:
                             refresh_connection()
                             counter = 0
 
