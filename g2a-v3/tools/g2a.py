@@ -156,4 +156,78 @@ class G2A:
 
         return ";".join(formated_datas)
 
+
+class CSVUploader(object):
+
+    def __init__(self, freq: str, source: str, log: str, site:str, site_url:str) -> None:
+        self.freq = freq
+        self.source = source
+        self.log = log
+        self.site = site
+        self.site_url = site_url
+
+    def upload(self):
+      
+        rows = []
+
+        with open(self.source, encoding='utf-8') as csvf:
+            
+            csvReader = csv.DictReader(csvf)
+            listrow = list(csvReader)
+
+            start = self.get_history('last')
+
+            for i in range(start, len(listrow)):
+
+                if not 'cle_station' in listrow[i].keys():
+                    listrow[i]['cle_station'] = ""
+
+                if not 'nom_station' in listrow[i].keys():   
+                    listrow[i]['nom_station'] = ""
+
+                rows.append(listrow[i])
+
+                self.set_history('lastrow', i)
+
+                if len(rows) == 50 or i == len(listrow)-1:
+                    try:
+                        str_data = G2A.format_data(rows)
+                        # print(str_data)
+                        res = G2A.post_accommodation("accommodations/multi", {
+                            "nights": self.freq,
+                            "website_name": self.site,
+                            "website_url": self.site_url,
+                            "data_content": str_data
+                        })
+                        print(res)
+                    except Exception as e:
+                        print(e)
+                        time.sleep(5)
+                        self.upload()
+                    
+                    rows = []
+
+    def get_history(self, key: str) -> object:
+        logs = {}
+        try:
+            with open(self.log, 'r') as log_file:
+                logs = json.load(log_file)
+                return logs[key]
+        except:
+            return 0
+
+    def set_history(self, key: str, value: int) -> None:
+        log = {}
+        if os.path.exists(self.log):
+            try:
+                with open(self.log, 'r') as log_file:
+                    log = json.load(log_file)
+            except:
+                pass
+
+        log[key] = value
+
+        with open(self.log, 'w') as log_file:
+            log_file.write(json.dumps(log, indent=4))
+
 # G2A.delete_all("reviews")

@@ -17,7 +17,7 @@ import sys
 import json
 from tools.changeip import refresh_connection
 import csv
-from tools.g2a import G2A
+from tools.g2a import G2A, CSVUploader
 
 
 class AnnonceBooking(Scraping):
@@ -225,75 +225,6 @@ class BookingScraper(Scraper):
         self.max_cycle = number
 
 
-class CSVUploader(object):
-
-    def __init__(self, freq: str, source: str, log: str) -> None:
-        self.freq = freq
-        self.source = source
-        self.log = log
-
-    def upload(self):
-      
-        rows = []
-
-        with open(self.source, encoding='utf-8') as csvf:
-            
-            csvReader = csv.DictReader(csvf)
-            listrow = list(csvReader)
-
-            start = self.get_history('last')
-
-            for i in range(start, len(listrow)):
-
-                listrow[i]['cle_station'] = ""
-                listrow[i]['nom_station'] = ""
-
-                rows.append(listrow[i])
-
-                self.set_history('lastrow', i)
-
-                if len(rows) == 50 or i == len(listrow)-1:
-                    try:
-                        str_data = G2A.format_data(rows)
-                        # print(str_data)
-                        res = G2A.post_accommodation("accommodations/multi", {
-                            "nights": self.freq,
-                            "website_name": 'booking',
-                            "website_url": "https://www.booking.com",
-                            "data_content": str_data
-                        })
-                        print(res)
-                    except Exception as e:
-                        print(e)
-                        time.sleep(5)
-                        self.upload()
-                    
-                    rows = []
-
-    def get_history(self, key: str) -> object:
-        logs = {}
-        try:
-            with open(self.log, 'r') as log_file:
-                logs = json.load(log_file)
-                return logs[key]
-        except:
-            return 0
-
-    def set_history(self, key: str, value: int) -> None:
-        log = {}
-        if os.path.exists(self.log):
-            try:
-                with open(self.log, 'r') as log_file:
-                    log = json.load(log_file)
-            except:
-                pass
-
-        log[key] = value
-
-        with open(self.log, 'w') as log_file:
-            log_file.write(json.dumps(log, indent=4))
-
-
 class CleanBooking(object):
 
     def __init__(self, freq: object, folder: str, start_date: str, end_date: str, sources: list) -> None:
@@ -398,7 +329,7 @@ def booking_main():
         miss = check_arguments(args, ['-f','-st', '-l'])
 
         if not len(miss):
-            up = CSVUploader(freq=args.frequency, source=args.storage, log=args.log)
+            up = CSVUploader(freq=args.frequency, source=args.storage, log=args.log, site='booking', site_url = 'https://www.booking.com')
             up.upload()
 
         else:
