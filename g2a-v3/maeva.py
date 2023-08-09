@@ -28,7 +28,7 @@ from selenium.webdriver.remote.command import Command
 from scraping import Scraping
 from tools.args import main_arguments, check_arguments
 from tools.changeip import refresh_connection
-from tools.g2a import UploadCSV
+from tools.g2a import CSVUploader
 
 """DestinationListMaeva: Classe utilisée pour récupérer la liste des destinations d'une station"""
 
