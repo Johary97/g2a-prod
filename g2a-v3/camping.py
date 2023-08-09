@@ -23,7 +23,8 @@ from urllib.parse import urlparse, parse_qs
 from scraping import Scraping, Scraper
 from tools.args import main_arguments, ARGS_INFO, check_arguments
 import dotenv
-from tools.g2a import UploadCSV
+from tools.g2a import CSVUploader
+from tools.changeip import refresh_connection
 
 
 class AnnonceCamping(Scraping):
@@ -36,6 +37,9 @@ class AnnonceCamping(Scraping):
 
     def set_week_scrap(self, date: str) -> None:
         self.week_scrap = date
+
+    def set_to_principal(self):
+        self.principal = True
 
     def get_link_data(self) -> tuple:
         """ function to get dates in url """
@@ -139,6 +143,64 @@ class AnnonceCamping(Scraping):
             self.driver.quit()
             sys.exit("Arrêt!")
 
+    def create_file(self) -> None:
+        if not os.path.exists(f"{self.storage_file}"):
+            with open(f"{self.storage_file}", 'w') as file:
+                fields_name = [
+                    'web-scrapper-order',
+                    'date_price',
+                    'date_debut',
+                    'date_fin',
+                    'prix_init',
+                    'prix_actuel',
+                    'typologie',
+                    'n_offre',
+                    'nom',
+                    'Nb personnes',
+                    'localite',
+                    'date_debut-jour',
+                    'Nb semaines',
+                    'cle_station',
+                    'nom_station'
+                ]
+                writers = writer(file)
+                writers.writerow(fields_name)
+    
+    def save_data(self) -> bool:
+        
+        """ function to append data at the excel file """
+        # return True
+        # print(self.data)
+        if len(self.data):
+            try:
+                field_names = [
+                    'web-scrapper-order',
+                    'date_price',
+                    'date_debut', 
+                    'date_fin',
+                    'prix_init',
+                    'prix_actuel',
+                    'typologie',
+                    'n_offre',
+                    'nom',
+                    'Nb personnes',
+                    'localite',
+                    'date_debut-jour',
+                    'Nb semaines',
+                    'cle_station',
+                    'nom_station'
+                ]
+
+                with open(self.storage_file, 'a', newline='') as f_object:
+                    dictwriter_object = csv.DictWriter(f_object, fieldnames=field_names)
+                    dictwriter_object.writerows(self.data)
+                    return True
+            except Exception as e:
+                print(e)
+                with open('SaveDataError.txt', 'a') as file:
+                    file.write(f"{e}")
+                    return False  
+
 
 class CampingScraper(Scraper):
     def __init__(self,) -> None:
@@ -147,22 +209,37 @@ class CampingScraper(Scraper):
         self.storage = ''
         self.log = ''
         self.week_scrap = ''
+        self.principal = False
 
     def set_destinations(self, filename: str) -> None:
         with open(filename, 'r') as infile:
             self.urls = json.load(infile)
 
+    def set_output(self, name):
+        self.output = f'{name}.csv'
+
     def set_log(self, log):
-        self.log = log
+        self.log = f'{log}.json'
 
     def set_week_scrap(self, date: str) -> None:
         self.week_scrap = date
     
     def start(self) -> None:
+        if self.principal:
+            refresh_connection()
+
+        counter = 0
+
         c = AnnonceCamping()
+
+        if self.principal:
+            c.set_to_principal()
+
         c.set_week_scrap(self.week_scrap)
         last_index = self.get_history('last_index')
-        c.set_driver_interval(300, 500)
+        # c.set_driver_interval(300, 500)
+        c.set_storage(self.output)
+        c.create_file()
         for index in range(last_index + 1, len(self.urls)):
             try:
                 print(index+1, ' / ', len(self.urls))
@@ -171,12 +248,22 @@ class CampingScraper(Scraper):
                 time.sleep(5)
                 c.extract()
                 c.save()
+                c.save_data()
                 self.set_history('last_index', index)
+
+                if self.principal:
+                    counter += 1
+                    if counter == 50:
+                        refresh_connection()
+                        counter = 0
                 # c.increment_counter()
             except Exception as e:
-                print(e)
-                c.driver.quit()
-                break
+                if self.principal:
+                    refresh_connection()
+                
+                print("Wait and refresh ...")
+                time.sleep(5)
+                self.start()
         
         c.driver.quit()
 
@@ -207,7 +294,7 @@ class CampingScraper(Scraper):
 class CampingInitializer(Scraping):
 
     def __init__(self, start_date: str, end_date: str) -> None:
-        super().__init__()
+        super().__init__(is_json=True)
         self.start_date = datetime.strptime(start_date, "%d/%m/%Y")
         self.end_date = datetime.strptime(end_date, "%d/%m/%Y")
         self.base_urls = []
@@ -283,6 +370,8 @@ def camping_main():
 
     data_folder = os.environ.get('STATICS_FOLDER')
     log_folder = os.environ.get('LOGS')
+    output_folder = os.environ.get('OUTPUT_FOLDER')
+    
 
     args = main_arguments()
 
@@ -309,21 +398,26 @@ def camping_main():
 
     if args.action and args.action == 'start':
         miss = check_arguments(
-            args, ['-l', '-d'])
+            args, ['-d', '-n'])
 
         if not len(miss):
             date_scrap = args.date_price
             
             c = CampingScraper()
 
+            output_path = f"{output_folder}/campings/{date_scrap.replace('/', '_')}"
             log_path = f"{log_folder}/campings/{date_scrap.replace('/', '_')}"
 
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
+        
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
 
             c.set_week_scrap(date_scrap)
             c.set_destinations(f"{data_folder}/{args.destinations}")
-            c.set_log(f"{log_path}/{args.log}")
+            c.set_log(f'{log_path}/{args.name}')
+            c.set_output(f'{output_path}/{args.name}')
             c.start()
 
         else:
