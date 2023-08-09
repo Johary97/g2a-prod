@@ -23,6 +23,7 @@ from urllib.parse import urlparse, parse_qs
 from scraping import Scraping, Scraper
 from tools.args import main_arguments, ARGS_INFO, check_arguments
 import dotenv
+from tools.g2a import UploadCSV
 
 
 class AnnonceCamping(Scraping):
@@ -327,3 +328,13 @@ def camping_main():
 
         else:
             raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")
+
+    if args.action and args.action == 'uploadcsv':
+        miss = check_arguments(args, ['-f','-st', '-l'])
+
+        if not len(miss):
+            up = CSVUploader(freq=args.frequency, source=args.storage, log=args.log, site='campings', site_url = 'https://www.campings.com')
+            up.upload()
+
+        else:
+            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")   

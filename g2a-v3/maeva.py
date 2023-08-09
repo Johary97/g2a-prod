@@ -28,6 +28,7 @@ from selenium.webdriver.remote.command import Command
 from scraping import Scraping
 from tools.args import main_arguments, check_arguments
 from tools.changeip import refresh_connection
+from tools.g2a import UploadCSV
 
 """DestinationListMaeva: Classe utilisée pour récupérer la liste des destinations d'une station"""
 
@@ -552,3 +553,13 @@ def maeva_main():
 
         else:
             raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")
+
+    if args.action and args.action == 'uploadcsv':
+        miss = check_arguments(args, ['-f','-st', '-l'])
+
+        if not len(miss):
+            up = CSVUploader(freq=args.frequency, source=args.storage, log=args.log, site='maeva', site_url = 'https://www.maeva.com')
+            up.upload()
+
+        else:
+            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")   
