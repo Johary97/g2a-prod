@@ -141,7 +141,7 @@ class AnnonceCamping(Scraping):
         except Exception as e:
             print(e)
             self.driver.quit()
-            sys.exit("Arrêt!")
+            raise Exception(e)
 
     def create_file(self) -> None:
         if not os.path.exists(f"{self.storage_file}"):
