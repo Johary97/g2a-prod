@@ -418,6 +418,10 @@ def camping_main():
             c.set_destinations(f"{data_folder}/{args.destinations}")
             c.set_log(f'{log_path}/{args.name}')
             c.set_output(f'{output_path}/{args.name}')
+
+            if args.principal:
+                c.set_to_principal()
+
             c.start()
 
         else:
