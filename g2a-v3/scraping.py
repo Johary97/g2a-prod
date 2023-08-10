@@ -31,7 +31,7 @@ import csv
 
 class Scraping(object):
 
-    def __init__(self, in_background: bool = False) -> None:
+    def __init__(self, in_background: bool = False, is_json: bool = False) -> None:
 
         # driver options
         self.chrome_options = webdriver.ChromeOptions()
@@ -67,6 +67,7 @@ class Scraping(object):
         self.driver_cycle = 30
         self.counter = 0
         self.nights = 7
+        self.is_json = is_json
 
     def set_nights(self, nights):
         self.nights = nights
@@ -126,7 +127,10 @@ class Scraping(object):
         self.log = logfile
 
     def execute(self) -> None:
-        self.create_file()
+        print("Execution ...")
+        if not self.is_json:
+            self.create_file()
+            
         for url in self.urls:
             try:
                 self.set_url(url)
@@ -209,7 +213,6 @@ class Scraping(object):
                             'prix_actuel',
                             'typologie',
                             'n_offre',
-                            # 'stars',
                             'nom',
                             'localite',
                             'date_debut-jour',
