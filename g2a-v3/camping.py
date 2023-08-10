@@ -312,7 +312,6 @@ class CampingInitializer(Scraping):
     def initialize(self) -> None:
         print("Récupération nombre de pages...")
         for url in self.base_urls:
-            print()
             nb_page = self.get_page_length(url)
             url_paged = list(self.generate_url_with_page(url, nb_page))
             self.append_urls(url_paged)
