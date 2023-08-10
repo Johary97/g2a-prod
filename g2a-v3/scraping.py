@@ -138,7 +138,8 @@ class Scraping(object):
                 time.sleep(2)
                 self.extract()
                 self.save()
-                self.save_data()
+                if not self.is_json:
+                    self.save_data()
             except Exception as e:
                 print(e)
                 self.driver.quit()
