@@ -256,7 +256,7 @@ class CampingScraper(Scraper):
 
                 if self.principal:
                     counter += 1
-                    if counter == 50:
+                    if counter == 100:
                         refresh_connection()
                         counter = 0
                 # c.increment_counter()

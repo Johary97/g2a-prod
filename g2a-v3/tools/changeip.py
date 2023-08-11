@@ -33,5 +33,8 @@ def refresh_connection():
 
     if system_name == 'windows':
         print('\n********************************************************************************')
-        print(input('\n**** Veuillez changer d\'adresse IP puis appuiez sur la touche "Entrer" (ici) **** \n'))
+        touche = input('\n**** Veuillez changer d\'adresse IP puis appuiez sur la touche "Entrer" (ici) **** \n')
+        if touche:
+            return
+            
 
