@@ -223,6 +223,9 @@ class CampingScraper(Scraper):
 
     def set_week_scrap(self, date: str) -> None:
         self.week_scrap = date
+
+    def set_to_principal(self) -> None:
+        self.principal = True
     
     def start(self) -> None:
         if self.principal:
