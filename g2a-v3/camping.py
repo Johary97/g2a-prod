@@ -28,8 +28,8 @@ from tools.changeip import refresh_connection
 
 
 class AnnonceCamping(Scraping):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, in_background:bool=False) -> None:
+        super().__init__(in_background=in_background)
         self.data_extension = 'csv'
         self.week_scrap = ''
         self.website_name = 'campings'
@@ -230,7 +230,7 @@ class CampingScraper(Scraper):
 
         counter = 0
 
-        c = AnnonceCamping()
+        c = AnnonceCamping(in_background=True)
 
         if self.principal:
             c.set_to_principal()
