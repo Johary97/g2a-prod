@@ -58,7 +58,7 @@ class AnnonceCamping(Scraping):
 
     def extract(self) -> None:
         def extract_dates(string_date):
-            months = {'jan.': 1, 'fév.': 2, 'mars': 3, 'avr.': 4, 'mai': 5, 'juin': 6, 'juil.': 7, 'août': 8, 'sept.': 9, 'oct.': 10, 'nov.': 11, 'déc.': 12}
+            months = {'janv.': 1, 'fév.': 2, 'mars': 3, 'avr.': 4, 'mai': 5, 'juin': 6, 'juil.': 7, 'août': 8, 'sept.': 9, 'oct.': 10, 'nov.': 11, 'déc.': 12}
             date_split = []
             i = 0
 
