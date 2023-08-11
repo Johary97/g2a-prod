@@ -338,7 +338,7 @@ class CampingInitializer(Scraping):
         print(len(results))
 
         for result in results:
-            url = 'https://www.campings.com' + result.find('a', {'class': 'dca-product-card__link'})['href'].split('?')[0]
+            url = 'https://www.campings.com' + result.find('a', href=True)['href'].split('?')[0]
             link = url + f'?checkInDate={url_date}&night=7'
             self.data.append(link)
             
