@@ -324,19 +324,23 @@ class CampingInitializer(Scraping):
     def extract(self) -> None:
 
         soupe = BeautifulSoup(self.driver.page_source, 'lxml')
-        results = soupe.find('div', class_="dca-results__list").find_all('section', class_='dca-result--product') \
-            if soupe.find('div', class_="dca-results__list").find_all('section', class_='dca-result--product') else []
 
         params_url = parse_qs(urlparse(self.driver.current_url).query)
         url_date = params_url['checkInDate'][0]
-
+        
+        results = soupe.find('div', class_="dca-results__list").find_all('section', class_='dca-result--product') \
+            if soupe.find('div', class_="dca-results__list").find_all('section', class_='dca-result--product') else []
+        
+        if not len(results):
+            results = soupe.find('div', {'class': 'dca-results__list'}).find_all('div', {'class': 'dca-product-card'}) \
+                if soupe.find('div', {'class': 'dca-results__list'}) and soupe.find('div', {'class': 'dca-results__list'}).find_all('div', {'class': 'dca-product-card'}) else []
+    
         print(len(results))
 
-        if results:
-            for result in results:
-                url = 'https://www.campings.com' + result.find('a', href=True)['href'].split('?')[0]
-                link = url + f'?checkInDate={url_date}&night=7'
-                self.data.append(link)
+        for result in results:
+            url = 'https://www.campings.com' + result.find('a', {'class': 'dca-product-card__link'})['href'].split('?')[0]
+            link = url + f'?checkInDate={url_date}&night=7'
+            self.data.append(link)
             
     def save(self) -> None:
         current_data = []
