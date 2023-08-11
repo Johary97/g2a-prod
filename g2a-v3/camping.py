@@ -330,6 +330,8 @@ class CampingInitializer(Scraping):
         params_url = parse_qs(urlparse(self.driver.current_url).query)
         url_date = params_url['checkInDate'][0]
 
+        print(len(results))
+
         if results:
             for result in results:
                 url = 'https://www.campings.com' + result.find('a', href=True)['href'].split('?')[0]
@@ -338,6 +340,7 @@ class CampingInitializer(Scraping):
             
     def save(self) -> None:
         current_data = []
+        print(len(self.data))
 
         if os.path.exists(self.storage_file):
             with open(self.storage_file, 'r') as openfile:
@@ -346,6 +349,7 @@ class CampingInitializer(Scraping):
         current_data.extend(self.data)
         current_data = list(set(current_data))
         json_object = json.dumps(current_data, indent=4)
+        print(len(current_data))
 
         with open(self.storage_file, 'w') as outfile:
             outfile.write(json_object)
