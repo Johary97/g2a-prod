@@ -57,7 +57,7 @@ class AnnonceCamping(Scraping):
         return station_key, checkin_date, checkout_date
 
     def extract(self) -> None:
-        def extract_dates(string_date):
+        def extract_dates(string_date,year):
             months = {'janv.': 1, 'févr.': 2, 'mars': 3, 'avr.': 4, 'mai': 5, 'juin': 6, 'juil.': 7, 'août': 8, 'sept.': 9, 'oct.': 10, 'nov.': 11, 'déc.': 12}
             date_split = []
             i = 0
@@ -75,7 +75,7 @@ class AnnonceCamping(Scraping):
                 
                 i += 1
 
-            return datetime.strftime(datetime.strptime(f"{date_split[2]}/{months[date_split[3]]}/2023", '%d/%m/%Y'), '%d/%m/%Y') 
+            return datetime.strftime(datetime.strptime(f"{date_split[2]}/{months[date_split[3]]}/{year}", '%d/%m/%Y'), '%d/%m/%Y') 
 
         try:
             soupe = BeautifulSoup(self.driver.page_source, 'lxml')
@@ -104,7 +104,7 @@ class AnnonceCamping(Scraping):
 
             for result in results:
                 dates_string = result.find('div', class_="dates__values").text.strip()
-                date_1 = extract_dates(dates_string)
+                date_1 = extract_dates(dates_string, year=date_debut.split('/')[2])
                 if date_1 == date_debut:
                     final_results.append(result)
 
