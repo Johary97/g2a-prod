@@ -51,8 +51,7 @@ class Scraping(object):
        #  self.driver = webdriver.Firefox(service=FirefoxService(
        #             GeckoDriverManager().install()), options=self.firefox_options)
 
-        self.driver = webdriver.Chrome(service=ChromeService(
-            ChromeDriverManager(version="114.0.5735.90").install()), options=self.chrome_options)
+        self.driver = webdriver.Chrome(options=self.chrome_options)
         self.driver.maximize_window()
         self.drivers = ['chrome', 'firefox']
         self.current_driver = self.drivers[0]
