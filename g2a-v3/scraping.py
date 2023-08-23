@@ -48,10 +48,11 @@ class Scraping(object):
         in_background and self.firefox_options.add_argument('--headless')
         self.firefox_options.add_argument('--incognito')
 
-       #  self.driver = webdriver.Firefox(service=FirefoxService(
-       #             GeckoDriverManager().install()), options=self.firefox_options)
+        self.driver = webdriver.Firefox(service=FirefoxService(
+                   GeckoDriverManager().install()), options=self.firefox_options)
 
         self.driver = webdriver.Chrome(options=self.chrome_options)
+
         self.driver.maximize_window()
         self.drivers = ['chrome', 'firefox']
         self.current_driver = self.drivers[0]
