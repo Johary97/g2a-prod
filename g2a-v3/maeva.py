@@ -164,7 +164,8 @@ class AnnonceMaeva(Scraping):
             print("Saving ...")
             self.save()
             self.save_data()
-        except:
+        except Exception as e:
+            print(e)
             if self.principal:
                 refresh_connection()
                 
@@ -205,10 +206,17 @@ class AnnonceMaeva(Scraping):
             localisation = soupe.find('div', {"id": "fiche-produit-localisation"}).find('span', class_='maeva-black').text.strip() \
                 if soupe.find('div', {"id": "fiche-produit-localisation"}) else ''
 
-            breadcrumbs = soupe.find(
-                'ol', {'id': 'ui-ariane'}).find_all('li', {'itemprop': 'itemListElement'})
+            breadcrumbs = []
+
+            try:
+                breadcrumbs = soupe.find(
+                    'ol', {'id': 'ui-ariane'}).find_all('li', {'itemprop': 'itemListElement'})
+            except:
+                breadcrumbs = soupe.find(
+                    'nav', {'id': 'ui-ariane'}).find_all('div', {'itemprop': 'itemListElement'})
+
             station_breadcrumb = breadcrumbs[-2:-
-                                             1][0].find('a', class_='ariane-item')
+                                            1][0].find('a', class_='ariane-item')
             station_name = station_breadcrumb.find(
                 'span', {'itemprop': 'name'}).text.strip().upper()
             station_key = station_breadcrumb['href'].split(
