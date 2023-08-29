@@ -198,7 +198,6 @@ class AnnonceMaeva(Scraping):
         soupe = BeautifulSoup(self.driver.page_source, 'lxml')
 
         if soupe.find('div', class_='fiche-seo-toaster-container'):
-
             toasters = soupe.find('div', class_='fiche-seo-toaster-container').find_all(
                 'div', class_='toaster') if soupe.find('div', class_='fiche-seo-toaster-container') else []
             residence = soupe.find('h1', {"id": "fiche-produit-residence-libelle"}).text.strip() \
@@ -207,6 +206,7 @@ class AnnonceMaeva(Scraping):
                 if soupe.find('div', {"id": "fiche-produit-localisation"}) else ''
 
             breadcrumbs = []
+            
 
             try:
                 breadcrumbs = soupe.find(
@@ -215,12 +215,9 @@ class AnnonceMaeva(Scraping):
                 breadcrumbs = soupe.find(
                     'nav', {'id': 'ui-ariane'}).find_all('div', {'itemprop': 'itemListElement'})
 
-            station_breadcrumb = breadcrumbs[-2:-
-                                            1][0].find('a', class_='ariane-item')
-            station_name = station_breadcrumb.find(
-                'span', {'itemprop': 'name'}).text.strip().upper()
-            station_key = station_breadcrumb['href'].split(
-                ',')[1].replace('.html', '')
+            station_breadcrumb = breadcrumbs[-2:-1][0].find('a', class_='ariane-item') if breadcrumbs[-2:-1][0].find('a', class_='ariane-item') else ''
+            station_name = localisation
+            station_key = station_breadcrumb['href'].split(',')[1].replace('.html', '') if station_breadcrumb != '' else ''
 
             for toaster in toasters:
                 is_disponible = False if toaster.find(
