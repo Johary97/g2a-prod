@@ -20,6 +20,7 @@ class G2A:
         self.body = body
         self.id = id
         self.api_url = os.environ.get("G2A_API_URL")
+        self.page = 1
 
     def set_id(self, id):
         self.id = id
@@ -39,6 +40,9 @@ class G2A:
 
     def set_params(self, params):
         self.params = params
+
+    def set_page(self, page):
+        self.page = page
 
     def execute(self):
         response = {}
@@ -85,7 +89,7 @@ class G2A:
                 )
             else:
                 response = getattr(requests, self.method)(
-                    f'{self.api_url}{self.entity}',
+                    f'{self.api_url}{self.entity}?page={self.page}',
                     headers=self.headers,
                     data=self.body
                 )

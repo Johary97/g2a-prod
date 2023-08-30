@@ -28,7 +28,7 @@ from selenium.webdriver.remote.command import Command
 from scraping import Scraping
 from tools.args import main_arguments, check_arguments
 from tools.changeip import refresh_connection
-from tools.g2a import CSVUploader
+from tools.g2a import CSVUploader, G2A
 
 """DestinationListMaeva: Classe utilisée pour récupérer la liste des destinations d'une station"""
 
@@ -132,6 +132,8 @@ class AnnonceMaeva(Scraping):
         self.website_name = "maeva"
         self.website_url = "https://www.maeva.com"
         self.principal = False
+        self.stations = {}
+        self.init_station_list()
 
     def execute(self):
         try:
@@ -173,6 +175,26 @@ class AnnonceMaeva(Scraping):
             time.sleep(5)
             self.scrap()
 
+    def init_station_list(self):
+        g2a_instance = G2A(entity="regions")
+        print("Initialisation liste stations ...")
+
+        page = 1
+
+        while True:
+            g2a_instance.set_page(page)
+            results = g2a_instance.execute().json()
+
+            if len(results) == 0:
+                break
+
+            for x in results:
+                if x['website'] in ['/api/websites/1', '/api/websites/14']:
+                    if x['name'] != '' and x['name'] not in self.stations.keys():
+                        self.stations[x['name']] = x['region_key']
+
+            page += 1
+
     def set_price_date(self, price_date):
         self.price_date = price_date
 
@@ -207,7 +229,6 @@ class AnnonceMaeva(Scraping):
 
             breadcrumbs = []
             
-
             try:
                 breadcrumbs = soupe.find(
                     'ol', {'id': 'ui-ariane'}).find_all('li', {'itemprop': 'itemListElement'})
@@ -218,6 +239,10 @@ class AnnonceMaeva(Scraping):
             station_breadcrumb = breadcrumbs[-2:-1][0].find('a', class_='ariane-item') if breadcrumbs[-2:-1][0].find('a', class_='ariane-item') else ''
             station_name = localisation
             station_key = station_breadcrumb['href'].split(',')[1].replace('.html', '') if station_breadcrumb != '' else ''
+
+            if not station_key:
+                station_key = self.stations[station_name.upper()] if station_name.upper() in self.stations.keys() else ''
+                print(station_name, ' => ', station_key)
 
             for toaster in toasters:
                 is_disponible = False if toaster.find(
