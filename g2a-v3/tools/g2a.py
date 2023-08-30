@@ -2,7 +2,8 @@ import requests
 import dotenv
 import os
 import json
-
+import csv
+import time
 
 class G2A:
 
@@ -171,7 +172,7 @@ class CSVUploader(object):
         rows = []
 
         with open(self.source, encoding='utf-8') as csvf:
-            
+            print(self.source)
             csvReader = csv.DictReader(csvf)
             listrow = list(csvReader)
 
