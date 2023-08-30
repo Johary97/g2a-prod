@@ -161,9 +161,11 @@ class G2A:
 class CSVUploader(object):
 
     def __init__(self, freq: str, source: str, log: str, site:str, site_url:str) -> None:
+        dotenv.load_dotenv()
+        
         self.freq = freq
-        self.source = source
-        self.log = log
+        self.source = f'{os.environ.get("STATICS_FOLDER")}/{source}'
+        self.log = f'{os.environ.get("LOGS")}/{log}'
         self.site = site
         self.site_url = site_url
 
@@ -172,7 +174,6 @@ class CSVUploader(object):
         rows = []
 
         with open(self.source, encoding='utf-8') as csvf:
-            print(self.source)
             csvReader = csv.DictReader(csvf)
             listrow = list(csvReader)
 
