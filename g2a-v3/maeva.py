@@ -414,9 +414,13 @@ class MaevaDestinationInitializer:
 
         self.data_file = 'annonce.json'
         self.log = 'logs.json'
+        self.principal = False
 
     def set_log(self, log):
         self.log = f'{log}.json'
+
+    def set_to_principal(self):
+        self.principal = True
 
     def save_history(self, index, log_key):
         logs = {}
@@ -444,6 +448,11 @@ class MaevaDestinationInitializer:
         instance = DestinationListMaeva(is_background=False)
         last_index = self.load_history('station_index')
 
+        if self.principal:
+            refresh_connection()
+
+        counter = 0
+
         try:
 
             for index in range(last_index+1, len(self.stations)):
@@ -453,6 +462,12 @@ class MaevaDestinationInitializer:
                 instance.set_storage(self.dest_source)
                 instance.execute()
                 self.save_history(index, 'station_index')
+
+                if self.principal:
+                    counter += 1
+                    if counter == 50:
+                        refresh_connection()
+                        counter = 0
 
             instance.driver.quit()
 
@@ -561,6 +576,9 @@ def maeva_main():
                 f'{data_folder}/{args.destinations}', f'{data_folder}/{args.stations}')
             m.set_log(f'{log_path}/d_{args.name}')
             m.start()
+            
+            if args.principal:
+                m.set_to_principal()
 
         else:
             raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")
