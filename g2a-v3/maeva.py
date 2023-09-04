@@ -445,7 +445,7 @@ class MaevaDestinationInitializer:
             return -1
 
     def start(self):
-        instance = DestinationListMaeva(is_background=False)
+        instance = DestinationListMaeva(is_background=True)
         last_index = self.load_history('station_index')
 
         if self.principal:
@@ -575,10 +575,11 @@ def maeva_main():
             m = MaevaDestinationInitializer(
                 f'{data_folder}/{args.destinations}', f'{data_folder}/{args.stations}')
             m.set_log(f'{log_path}/d_{args.name}')
-            m.start()
-            
+
             if args.principal:
                 m.set_to_principal()
+            
+            m.start()
 
         else:
             raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")
