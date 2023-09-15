@@ -52,7 +52,19 @@ class G2A:
                 response = getattr(requests, self.method)(
                     f'{self.api_url}{self.entity}/{self.id}',
                     params=self.params,
-                    headers=self.headers
+                    headers=self.headers,
+                )
+                return response
+            else:
+                print("Information", "Identifiant non spécifié!!!")
+
+        if self.method == 'deletebytag':
+            if self.id != -1:
+                response = getattr(requests, 'delete')(
+                    f'{self.api_url}{self.entity}',
+                    params=self.params,
+                    headers=self.headers,
+                    data=json.dumps(self.body)
                 )
                 return response
             else:
@@ -110,6 +122,18 @@ class G2A:
                 print(r.status_code)
             except:
                 pass
+
+    @staticmethod
+    def delete_by_tag(entity, tag):
+        delete_instance = G2A("deletebytag", entity)
+        delete_instance.set_body({"import_tag": tag})
+        
+        try:
+            resp = delete_instance.execute()
+            return resp.status_code
+        except Exception as e:
+            print(e)
+            pass
 
     @staticmethod
     def delete_all(entity):

@@ -611,4 +611,4 @@ def maeva_main():
             up.upload()
 
         else:
-            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")   
+            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}") 
