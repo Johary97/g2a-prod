@@ -189,7 +189,7 @@ class Scraping(object):
     def save(self) -> None:
 
         if len(self.data):
-            str_datas = G2A.format_data(self.data)
+            str_datas = G2A.format_data(self.data, self.website_name)
             res = G2A.post_accommodation("accommodations/multi", {
                 "nights": self.nights,
                 "website_name": self.website_name,

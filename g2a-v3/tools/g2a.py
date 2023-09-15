@@ -4,6 +4,7 @@ import os
 import json
 import csv
 import time
+from datetime import datetime
 
 class G2A:
 
@@ -136,8 +137,11 @@ class G2A:
         return "Pass"
 
     @staticmethod
-    def format_data(datas: list) -> str:
-        def stringify_dict(item: dict) -> str:
+    def format_data(datas: list, site: str) -> str:
+        def generate_tag():
+            return """%s-%s""" % (site, datetime.now().strftime("%Y%m%d%H%M%S"))
+
+        def stringify_dict(item: dict, tag: str) -> str:
             column_order = ['web-scrapper-order', 'date_price', 'date_debut', 'date_fin', 'prix_init', 'prix_actuel',
                             'typologie', 'n_offre', 'nom', 'localite', 'date_debut-jour', 'Nb semaines', 'cle_station', 'nom_station']
             result = ""
@@ -151,13 +155,14 @@ class G2A:
                 v = str(item[column]).replace(',', ' - ').replace('&', ' and ')
                 result += f'{v},'
 
-            result += f'{url}'
+            result += f'{url},{tag}'
             return result
 
         formated_datas = []
+        tag = generate_tag()
 
         for data in datas:
-            formated_datas.append(stringify_dict(data))
+            formated_datas.append(stringify_dict(data), tag)
 
         return ";".join(formated_datas)
 
@@ -197,7 +202,7 @@ class CSVUploader(object):
 
                 if len(rows) == 50 or i == len(listrow)-1:
                     try:
-                        str_data = G2A.format_data(rows)
+                        str_data = G2A.format_data(rows, self.site)
                         # print(str_data)
                         res = G2A.post_accommodation("accommodations/multi", {
                             "nights": self.freq,
@@ -235,5 +240,3 @@ class CSVUploader(object):
 
         with open(self.log, 'w') as log_file:
             log_file.write(json.dumps(log, indent=4))
-
-# G2A.delete_all("reviews")
