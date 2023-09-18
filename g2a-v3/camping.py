@@ -297,7 +297,7 @@ class CampingScraper(Scraper):
 class CampingInitializer(Scraping):
 
     def __init__(self, start_date: str, end_date: str) -> None:
-        super().__init__(is_json=True)
+        super().__init__(is_json=True, in_background=True)
         self.start_date = datetime.strptime(start_date, "%d/%m/%Y")
         self.end_date = datetime.strptime(end_date, "%d/%m/%Y")
         self.base_urls = []

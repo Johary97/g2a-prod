@@ -28,7 +28,7 @@ from selenium.webdriver.remote.command import Command
 from scraping import Scraping
 from tools.args import main_arguments, check_arguments
 from tools.changeip import refresh_connection
-from tools.g2a import CSVUploader
+from tools.g2a import CSVUploader, G2A
 
 """DestinationListMaeva: Classe utilisée pour récupérer la liste des destinations d'une station"""
 
@@ -132,6 +132,8 @@ class AnnonceMaeva(Scraping):
         self.website_name = "maeva"
         self.website_url = "https://www.maeva.com"
         self.principal = False
+        self.stations = {}
+        self.init_station_list()
 
     def execute(self):
         try:
@@ -173,6 +175,26 @@ class AnnonceMaeva(Scraping):
             time.sleep(5)
             self.scrap()
 
+    def init_station_list(self):
+        g2a_instance = G2A(entity="regions")
+        print("Initialisation liste stations ...")
+
+        page = 1
+
+        while True:
+            g2a_instance.set_page(page)
+            results = g2a_instance.execute().json()
+
+            if len(results) == 0:
+                break
+
+            for x in results:
+                if x['website'] in ['/api/websites/1', '/api/websites/14']:
+                    if x['name'] != '' and x['name'] not in self.stations.keys():
+                        self.stations[x['name']] = x['region_key']
+
+            page += 1
+
     def set_price_date(self, price_date):
         self.price_date = price_date
 
@@ -198,7 +220,6 @@ class AnnonceMaeva(Scraping):
         soupe = BeautifulSoup(self.driver.page_source, 'lxml')
 
         if soupe.find('div', class_='fiche-seo-toaster-container'):
-
             toasters = soupe.find('div', class_='fiche-seo-toaster-container').find_all(
                 'div', class_='toaster') if soupe.find('div', class_='fiche-seo-toaster-container') else []
             residence = soupe.find('h1', {"id": "fiche-produit-residence-libelle"}).text.strip() \
@@ -207,7 +228,7 @@ class AnnonceMaeva(Scraping):
                 if soupe.find('div', {"id": "fiche-produit-localisation"}) else ''
 
             breadcrumbs = []
-
+            
             try:
                 breadcrumbs = soupe.find(
                     'ol', {'id': 'ui-ariane'}).find_all('li', {'itemprop': 'itemListElement'})
@@ -215,12 +236,13 @@ class AnnonceMaeva(Scraping):
                 breadcrumbs = soupe.find(
                     'nav', {'id': 'ui-ariane'}).find_all('div', {'itemprop': 'itemListElement'})
 
-            station_breadcrumb = breadcrumbs[-2:-
-                                            1][0].find('a', class_='ariane-item')
-            station_name = station_breadcrumb.find(
-                'span', {'itemprop': 'name'}).text.strip().upper()
-            station_key = station_breadcrumb['href'].split(
-                ',')[1].replace('.html', '')
+            station_breadcrumb = breadcrumbs[-2:-1][0].find('a', class_='ariane-item') if breadcrumbs[-2:-1][0].find('a', class_='ariane-item') else ''
+            station_name = localisation
+            station_key = station_breadcrumb['href'].split(',')[1].replace('.html', '') if station_breadcrumb != '' else ''
+
+            if not station_key:
+                station_key = self.stations[station_name.upper()] if station_name.upper() in self.stations.keys() else ''
+                print(station_name, ' => ', station_key)
 
             for toaster in toasters:
                 is_disponible = False if toaster.find(
@@ -392,9 +414,13 @@ class MaevaDestinationInitializer:
 
         self.data_file = 'annonce.json'
         self.log = 'logs.json'
+        self.principal = False
 
     def set_log(self, log):
         self.log = f'{log}.json'
+
+    def set_to_principal(self):
+        self.principal = True
 
     def save_history(self, index, log_key):
         logs = {}
@@ -419,8 +445,13 @@ class MaevaDestinationInitializer:
             return -1
 
     def start(self):
-        instance = DestinationListMaeva(is_background=False)
+        instance = DestinationListMaeva(is_background=True)
         last_index = self.load_history('station_index')
+
+        if self.principal:
+            refresh_connection()
+
+        counter = 0
 
         try:
 
@@ -431,6 +462,12 @@ class MaevaDestinationInitializer:
                 instance.set_storage(self.dest_source)
                 instance.execute()
                 self.save_history(index, 'station_index')
+
+                if self.principal:
+                    counter += 1
+                    if counter == 50:
+                        refresh_connection()
+                        counter = 0
 
             instance.driver.quit()
 
@@ -538,6 +575,10 @@ def maeva_main():
             m = MaevaDestinationInitializer(
                 f'{data_folder}/{args.destinations}', f'{data_folder}/{args.stations}')
             m.set_log(f'{log_path}/d_{args.name}')
+
+            if args.principal:
+                m.set_to_principal()
+            
             m.start()
 
         else:
@@ -570,4 +611,4 @@ def maeva_main():
             up.upload()
 
         else:
-            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}")   
+            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}") 

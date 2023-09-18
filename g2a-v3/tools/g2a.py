@@ -2,7 +2,9 @@ import requests
 import dotenv
 import os
 import json
-
+import csv
+import time
+from datetime import datetime
 
 class G2A:
 
@@ -19,6 +21,7 @@ class G2A:
         self.body = body
         self.id = id
         self.api_url = os.environ.get("G2A_API_URL")
+        self.page = 1
 
     def set_id(self, id):
         self.id = id
@@ -39,6 +42,9 @@ class G2A:
     def set_params(self, params):
         self.params = params
 
+    def set_page(self, page):
+        self.page = page
+
     def execute(self):
         response = {}
         if self.method == 'delete':
@@ -46,7 +52,19 @@ class G2A:
                 response = getattr(requests, self.method)(
                     f'{self.api_url}{self.entity}/{self.id}',
                     params=self.params,
-                    headers=self.headers
+                    headers=self.headers,
+                )
+                return response
+            else:
+                print("Information", "Identifiant non spécifié!!!")
+
+        if self.method == 'deletebytag':
+            if self.id != -1:
+                response = getattr(requests, 'delete')(
+                    f'{self.api_url}{self.entity}',
+                    params=self.params,
+                    headers=self.headers,
+                    data=json.dumps(self.body)
                 )
                 return response
             else:
@@ -84,7 +102,7 @@ class G2A:
                 )
             else:
                 response = getattr(requests, self.method)(
-                    f'{self.api_url}{self.entity}',
+                    f'{self.api_url}{self.entity}?page={self.page}',
                     headers=self.headers,
                     data=self.body
                 )
@@ -104,6 +122,18 @@ class G2A:
                 print(r.status_code)
             except:
                 pass
+
+    @staticmethod
+    def delete_by_tag(entity, tag):
+        delete_instance = G2A("deletebytag", entity)
+        delete_instance.set_body({"import_tag": tag})
+        
+        try:
+            resp = delete_instance.execute()
+            return resp.status_code
+        except Exception as e:
+            print(e)
+            pass
 
     @staticmethod
     def delete_all(entity):
@@ -131,8 +161,11 @@ class G2A:
         return "Pass"
 
     @staticmethod
-    def format_data(datas: list) -> str:
-        def stringify_dict(item: dict) -> str:
+    def format_data(datas: list, site: str) -> str:
+        def generate_tag():
+            return """%s-%s""" % (site, datetime.now().strftime("%Y%m%d%H%M%S"))
+
+        def stringify_dict(item: dict, tag: str) -> str:
             column_order = ['web-scrapper-order', 'date_price', 'date_debut', 'date_fin', 'prix_init', 'prix_actuel',
                             'typologie', 'n_offre', 'nom', 'localite', 'date_debut-jour', 'Nb semaines', 'cle_station', 'nom_station']
             result = ""
@@ -146,13 +179,14 @@ class G2A:
                 v = str(item[column]).replace(',', ' - ').replace('&', ' and ')
                 result += f'{v},'
 
-            result += f'{url}'
+            result += f'{url},{tag}'
             return result
 
         formated_datas = []
+        tag = generate_tag()
 
         for data in datas:
-            formated_datas.append(stringify_dict(data))
+            formated_datas.append(stringify_dict(data, tag))
 
         return ";".join(formated_datas)
 
@@ -160,9 +194,11 @@ class G2A:
 class CSVUploader(object):
 
     def __init__(self, freq: str, source: str, log: str, site:str, site_url:str) -> None:
+        dotenv.load_dotenv()
+        
         self.freq = freq
-        self.source = source
-        self.log = log
+        self.source = f'{os.environ.get("STATICS_FOLDER")}/{source}'
+        self.log = f'{os.environ.get("LOGS")}/{log}'
         self.site = site
         self.site_url = site_url
 
@@ -171,7 +207,6 @@ class CSVUploader(object):
         rows = []
 
         with open(self.source, encoding='utf-8') as csvf:
-            
             csvReader = csv.DictReader(csvf)
             listrow = list(csvReader)
 
@@ -191,7 +226,7 @@ class CSVUploader(object):
 
                 if len(rows) == 50 or i == len(listrow)-1:
                     try:
-                        str_data = G2A.format_data(rows)
+                        str_data = G2A.format_data(rows, self.site)
                         # print(str_data)
                         res = G2A.post_accommodation("accommodations/multi", {
                             "nights": self.freq,
@@ -229,5 +264,3 @@ class CSVUploader(object):
 
         with open(self.log, 'w') as log_file:
             log_file.write(json.dumps(log, indent=4))
-
-# G2A.delete_all("reviews")

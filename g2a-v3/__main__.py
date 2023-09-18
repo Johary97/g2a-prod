@@ -8,6 +8,15 @@ from yelloh import yelloh_main
 if __name__ == "__main__":
     args = main_arguments()
 
+    if args.action and args.action == 'delete':
+        miss = check_arguments(args, ['-it'])
+
+        if not len(miss):
+            res = G2A.delete_by_tag("accommodation/cancelupload", args.it)
+            print(res)
+        else:
+            raise Exception(f"Argument(s) manquant(s): {', '.join(miss)}") 
+
     if args.platform and args.platform == 'booking':
         booking_main()
     if args.platform and args.platform == 'maeva':
