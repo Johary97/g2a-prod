@@ -186,7 +186,7 @@ class G2A:
         tag = generate_tag()
 
         for data in datas:
-            formated_datas.append(stringify_dict(data), tag)
+            formated_datas.append(stringify_dict(data, tag))
 
         return ";".join(formated_datas)
 
