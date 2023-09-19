@@ -299,6 +299,7 @@ class MaevaDestinationScraper:
         self.last_date = None
         self.log = ''
         self.date_price = date_price
+        self.tag_counter = 0
 
     def set_interval(self, f_date, l_date):
         self.first_date = datetime.strptime(f_date, '%d/%m/%Y')
@@ -306,6 +307,9 @@ class MaevaDestinationScraper:
 
     def set_log(self, log):
         self.log = f'{log}.json'
+
+    def set_tag_log(self, tag_log):
+        self.tag_log = f'{tag_log}.json'
 
     def set_output(self, name):
         self.output = f'{name}.csv'
@@ -331,41 +335,65 @@ class MaevaDestinationScraper:
 
         return urls
 
-    def save_history(self, index, log_key):
+    def set_history(self, index, log_key, file='log'):
         logs = {}
 
-        try:
-            with open(self.log, 'r') as openfile:
-                logs = json.load(openfile)
-        except Exception as e:
-            print(e)
-            pass
+        if file == 'log':
+            try:
+                with open(self.log, 'r') as openfile:
+                    logs = json.load(openfile)
+            except Exception as e:
+                pass
 
-        logs[log_key] = index
+            logs[log_key] = index
 
-        with open(self.log, 'w') as outfile:
-            outfile.write(json.dumps(logs, indent=4))
+            with open(self.log, 'w') as outfile:
+                outfile.write(json.dumps(logs, indent=4))
+                
+        else:
+            try:
+                with open(self.tag_log, 'r') as openfile:
+                    logs = json.load(openfile)
+            except Exception as e:
+                print(e)
+                pass
 
-    def load_history(self, log_key):
-        try:
-            with open(self.log, 'r') as openfile:
-                logs = json.load(openfile)
-                return logs[log_key] if log_key in logs.keys() else -1
-        except:
-            return -1
+            logs[log_key] = index
+
+            with open(self.tag_log, 'w') as outfile:
+                outfile.write(json.dumps(logs, indent=4))
+
+    def get_history(self, log_key, file='log'):
+        if file == 'log':
+            try:
+                with open(self.log, 'r') as openfile:
+                    logs = json.load(openfile)
+                    return logs[log_key] if log_key in logs.keys() else -1
+            except:
+                return -1
+        else:
+            try:
+                with open(self.tag_log, 'r') as openfile:
+                    logs = json.load(openfile)
+                    return logs[log_key] if log_key in logs.keys() else 0
+            except:
+                return 0
 
     def start(self):
-        last_index = self.load_history('last_destination_index')
+        last_index = self.get_history('last_destination_index')
+        tag_counter = self.get_history(log_key='tag_counter', file='tag')
+        tag_counter = tag_counter + 1 if tag_counter > 0 else 1
+        self.set_history(index=tag_counter, log_key='tag_counter', file="tag")
         
         if self.principal:
             refresh_connection()
 
-        counter = 0
-
         try:
             instance = AnnonceMaeva()
+            instance.change_logfile(self.log)
             instance.set_price_date(self.date_price)
             instance.set_storage(self.output)
+            instance.set_tag_counter(tag_counter)
 
             if self.principal:
                 instance.set_to_principal()
@@ -377,7 +405,7 @@ class MaevaDestinationScraper:
                 urls = self.generate_urls(index)
 
                 for url in urls:
-                    print(f"Week {urls.index(url)+1}/{len(urls)}")
+                    print(f"Week {urls.index(url)+1}/{len(urls)}: {url}")
                     instance.set_url(url)
                     instance.execute()
 
@@ -387,8 +415,8 @@ class MaevaDestinationScraper:
                             refresh_connection()
                             counter = 0
 
-                self.save_history(index, 'last_destination_index')
-
+                self.set_history(index, 'last_destination_index')
+                
             instance.driver.quit()
 
         except Exception as e:
@@ -436,7 +464,7 @@ class MaevaDestinationInitializer:
         with open(self.log, 'w') as outfile:
             outfile.write(json.dumps(logs, indent=4))
 
-    def load_history(self, log_key):
+    def get_history(self, log_key):
         try:
             with open(self.log, 'r') as openfile:
                 logs = json.load(openfile)
@@ -446,7 +474,7 @@ class MaevaDestinationInitializer:
 
     def start(self):
         instance = DestinationListMaeva(is_background=True)
-        last_index = self.load_history('station_index')
+        last_index = self.get_history('station_index')
 
         if self.principal:
             refresh_connection()
@@ -499,7 +527,7 @@ class MaevaDestinationInitializer:
             outfile.write(json.dumps(dests, indent=4))
 
     def is_done(self, url):
-        last_scraped_urls = self.load_history('last_scraped_urls')
+        last_scraped_urls = self.get_history('last_scraped_urls')
         return url in last_scraped_urls
 
 
@@ -594,6 +622,7 @@ def maeva_main():
                 f'{data_folder}/{args.destinations}', args.date_price)
             m.set_interval(args.start_date, args.end_date)
             m.set_log(f'{log_path}/{args.name}')
+            m.set_tag_log(f"{log_path}/{date_scrap.replace('/', '_')}")
             m.set_output(f'{output_path}/{args.name}')
             if args.principal:
                 m.set_to_principal()

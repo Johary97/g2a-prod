@@ -68,6 +68,7 @@ class Scraping(object):
         self.counter = 0
         self.nights = 7
         self.is_json = is_json
+        self.tag_counter = 0
 
     def set_nights(self, nights):
         self.nights = nights
@@ -125,6 +126,12 @@ class Scraping(object):
             os.makedirs(logpath)
 
         self.log = logfile
+
+    def change_logfile(self, filename):
+        self.log = filename
+
+    def set_tag_counter(self, value):
+        self.tag_counter = value
 
     def execute(self) -> None:
         print("Execution ...")
@@ -189,7 +196,8 @@ class Scraping(object):
     def save(self) -> None:
 
         if len(self.data):
-            str_datas = G2A.format_data(self.data, self.website_name)
+            # self.tag_counter += 1
+            str_datas = G2A.format_data(self.data, self.website_name, self.tag_counter)
             res = G2A.post_accommodation("accommodations/multi", {
                 "nights": self.nights,
                 "website_name": self.website_name,

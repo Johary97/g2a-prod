@@ -161,9 +161,9 @@ class G2A:
         return "Pass"
 
     @staticmethod
-    def format_data(datas: list, site: str) -> str:
+    def format_data(datas: list, site: str, tag_counter: int) -> str:
         def generate_tag():
-            return """%s-%s""" % (site, datetime.now().strftime("%Y%m%d%H%M%S"))
+            return """%s-%s-%s""" % (site, datetime.now().strftime("%Y%m%d"), tag_counter)
 
         def stringify_dict(item: dict, tag: str) -> str:
             column_order = ['web-scrapper-order', 'date_price', 'date_debut', 'date_fin', 'prix_init', 'prix_actuel',
@@ -211,6 +211,7 @@ class CSVUploader(object):
             listrow = list(csvReader)
 
             start = self.get_history('last')
+            counter = 1
 
             for i in range(start, len(listrow)):
 
@@ -226,7 +227,7 @@ class CSVUploader(object):
 
                 if len(rows) == 50 or i == len(listrow)-1:
                     try:
-                        str_data = G2A.format_data(rows, self.site)
+                        str_data = G2A.format_data(rows, self.site, counter)
                         # print(str_data)
                         res = G2A.post_accommodation("accommodations/multi", {
                             "nights": self.freq,
@@ -234,7 +235,7 @@ class CSVUploader(object):
                             "website_url": self.site_url,
                             "data_content": str_data
                         })
-                        print(res)
+                        counter += 1
                     except Exception as e:
                         print(e)
                         time.sleep(5)

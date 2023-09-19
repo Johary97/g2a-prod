@@ -221,6 +221,9 @@ class CampingScraper(Scraper):
     def set_log(self, log):
         self.log = f'{log}.json'
 
+    def set_tag_log(self, tag_log):
+        self.tag_log = f'{tag_log}.json'
+
     def set_week_scrap(self, date: str) -> None:
         self.week_scrap = date
 
@@ -239,7 +242,12 @@ class CampingScraper(Scraper):
             c.set_to_principal()
 
         c.set_week_scrap(self.week_scrap)
+        c.change_logfile(self.log)
         last_index = self.get_history('last_index')
+        tag_counter = self.get_history(log_key='tag_counter', file='tag')
+        tag_counter = tag_counter + 1 if tag_counter > 0 else 1
+        self.set_history(index=tag_counter, log_key='tag_counter', file="tag")
+        c.set_tag_counter(value=tag_counter)
         # c.set_driver_interval(300, 500)
         c.set_storage(self.output)
         c.create_file()
@@ -270,28 +278,47 @@ class CampingScraper(Scraper):
         
         c.driver.quit()
 
-    def get_history(self, key: str) -> object:
+    def set_history(self, log_key, index, file='log'):
         logs = {}
-        try:
-            with open(self.log, 'r') as log_file:
-                logs = json.load(log_file)
-                return logs[key]
-        except:
-            return -1
 
-    def set_history(self, key: str, value: object) -> None:
-        log = {}
-        try:
-            if os.path.exists(self.log):
-                with open(self.log, 'r') as log_file:
-                    log = json.load(log_file)
+        if file == 'log':
+            try:
+                with open(self.log, 'r') as openfile:
+                    logs = json.load(openfile)
+            except Exception as e:
+                pass
+            
+            logs[log_key] = index
 
-            log[key] = value
+            with open(self.log, 'w') as outfile:
+                outfile.write(json.dumps(logs, indent=4))
+        else:
+            try:
+                with open(self.tag_log, 'r') as openfile:
+                    logs = json.load(openfile)
+            except Exception as e:
+                pass
 
-            with open(self.log, 'w') as log_file:
-                log_file.write(json.dumps(log, indent=4))
-        except:
-            return
+            logs[log_key] = index
+            
+            with open(self.tag_log, 'w') as outfile:
+                outfile.write(json.dumps(logs, indent=4))
+
+    def get_history(self, log_key, file='log'):
+        if file == 'log':
+            try:
+                with open(self.log, 'r') as openfile:
+                    logs = json.load(openfile)
+                    return logs[log_key] if log_key in logs.keys() else -1
+            except:
+                return -1
+        else:
+            try:
+                with open(self.tag_log, 'r') as openfile:
+                    logs = json.load(openfile)
+                    return logs[log_key] if log_key in logs.keys() else 0
+            except:
+                return 0
 
 
 class CampingInitializer(Scraping):
@@ -427,6 +454,7 @@ def camping_main():
             c.set_week_scrap(date_scrap)
             c.set_destinations(f"{data_folder}/{args.destinations}")
             c.set_log(f'{log_path}/{args.name}')
+            c.set_tag_log(f"{log_path}/{date_scrap.replace('/', '_')}")
             c.set_output(f'{output_path}/{args.name}')
 
             if args.principal:
