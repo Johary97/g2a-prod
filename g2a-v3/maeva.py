@@ -381,6 +381,7 @@ class MaevaDestinationScraper:
 
     def start(self):
         last_index = self.get_history('last_destination_index')
+        counter = 0
         tag_counter = self.get_history(log_key='tag_counter', file='tag')
         tag_counter = tag_counter + 1 if tag_counter > 0 else 1
         self.set_history(index=tag_counter, log_key='tag_counter', file="tag")
