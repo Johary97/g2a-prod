@@ -30,7 +30,7 @@ class BookingScraping(object):
         self.chrome_options.add_argument('--ignore-certificate-errors')
         self.chrome_options.add_argument('--disable-gpu')
         self.chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
-        # self.chrome_options.add_argument('--headless')
+        self.chrome_options.add_argument('--headless')
         self.chrome_options.add_argument('--incognito')
         
         self.current_driver = 'chrome'
@@ -77,6 +77,7 @@ class BookingScraping(object):
         self.scrap_finnished = False
 
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=self.chrome_options)
+        self.driver.maximize_window()
         
         self.thread_one = Thread(target=self.get_pages)
         self.thread_two = Thread(target=self.get_data)
@@ -261,18 +262,38 @@ class BookingScraping(object):
         for card in cards:
             nom = card.find('div', {'data-testid':"title"}).text.replace('\n', '') \
                 if card.find('div', {'data-testid':"title"}) else ''
-            star = card.find('div', {'data-testid':"rating-stars"}) \
-                if card.find('div', {'data-testid':"rating-stars"}) else ''
+
             localite = card.find('span', {'data-testid':"address"}).text.replace('\n', '') \
                 if card.find('span', {'data-testid':"address"}) else ''
-            tax = card.find('div', {'data-testid':'taxes-and-charges'}).text \
-                if card.find('div', {'data-testid':"taxes-and-charges"}) else 0
-            taxe = 0 if 'comp' in tax else int(tax.split('€')[1])
-            prix_actuel = int(card.find('span', class_='fcab3ed991').text[2:].replace(' ', '')) \
-                if card.find('span', class_='fcab3ed991') else 0
-            prix_init = card.find('span', class_='c5888af24f').text[2:].replace(' ', '') \
-                if card.find('span', class_='c5888af24f') else 0
-            prix_init = int(prix_init) if prix_init != 0 else prix_actuel
+
+            taxe_text = card.find('div', {'data-testid':"availability-rate-information"}).find('div', {'data-testid':'taxes-and-charges'}).text
+            taxe = 0 if 'compri' not in taxe_text else int(''.join(filter(str.isdigit, taxe_text)))
+
+            prix_actuel = None
+            prix_init = None 
+            if card.find('span', {'data-testid':'price-and-discounted-price', 'class':'f6431b446c fbfd7c1165 e84eb96b1f'}):
+                prix_actuel = card.find('div', {'data-testid':"availability-rate-information"}).find('span', {'data-testid':'price-and-discounted-price', 'class':'f6431b446c fbfd7c1165 e84eb96b1f'}).text
+                prix_actuel = int(''.join(filter(str.isdigit, prix_actuel))) + taxe
+                prix_init = card.find('div', {'data-testid':"availability-rate-information"}).find('span', {'class':'c73ff05531 e84eb96b1f', 'aria-hidden':'true'}).text \
+                    if card.find('div', {'data-testid':"availability-rate-information"}).find('span', {'class':'c73ff05531 e84eb96b1f', 'aria-hidden':'true'}) else 0
+                prix_init = int(''.join(filter(str.isdigit, prix_init))) + taxe if prix_init > 0 else prix_actuel
+
+            elif card.find('span', class_='fcab3ed991') and prix_actuel == 0:
+                prix_actuel = int(card.find('span', class_='fcab3ed991').text[2:].replace(' ', '')) \
+                    if card.find('span', class_='fcab3ed991') else 0
+                prix_actuel = int(''.join(filter(str.isdigit, str(prix_actuel)))) + taxe
+                prix_init = card.find('span', class_='c5888af24f').text[2:].replace(' ', '') \
+                    if card.find('span', class_='c5888af24f') else 0
+                prix_init = int(''.join(filter(str.isdigit, prix_init))) + taxe if prix_init > 0 else prix_actuel
+
+            elif prix_actuel == 0:
+                prix_actuel = int(card.find('div', {'data-testid':"availability-rate-information"}).find('span', {'data-testid':'price-and-discounted-price'}).text[2:].replace(' ', '').strip()) \
+                    if card.find('div', {'data-testid':"availability-rate-information"}).find('span', {'data-testid':'price-and-discounted-price'}) else 0
+                prix_actuel = int(''.join(filter(str.isdigit, str(prix_actuel)))) + taxe
+                prix_init = int(card.find('div', {'data-testid':"availability-rate-information"}).find('span', class_='e729ed5ab6').text[2:].replace(' ', '').strip()) \
+                    if card.find('div', {'data-testid':"availability-rate-information"}).find('span', class_='e729ed5ab6') else 0
+                prix_init = int(''.join(filter(str.isdigit, prix_init))) + taxe if prix_init > 0 else prix_actuel
+
             typologie = card.find('span', class_="df597226dd").text.replace('\n', '') \
                 if card.find('span', class_="df597226dd") else ''
             date_prix = (datetime.now() + timedelta(days=-datetime.now().weekday())).strftime('%d/%m/%Y')
