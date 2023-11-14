@@ -39,17 +39,17 @@ class Scraping(object):
         self.chrome_options.add_argument('--disable-gpu')
         self.chrome_options.add_argument(
             '--disable-blink-features=AutomationControlled')
-        in_background and self.chrome_options.add_argument('--headless')
+        # in_background and self.chrome_options.add_argument('--headless')
         self.chrome_options.add_argument('--incognito')
 
         self.firefox_options = webdriver.FirefoxOptions()
         self.firefox_options.add_argument('--disable-gpu')
         self.firefox_options.add_argument('--ignore-certificate-errors')
-        in_background and self.firefox_options.add_argument('--headless')
+        # in_background and self.firefox_options.add_argument('--headless')
         self.firefox_options.add_argument('--incognito')
 
-       # self.driver = webdriver.Firefox(service=FirefoxService(
-       #            GeckoDriverManager().install()), options=self.firefox_options)
+        # self.driver = webdriver.Firefox(service=FirefoxService(
+        #             GeckoDriverManager().install()), options=self.firefox_options)
 
         self.driver = webdriver.Chrome(options=self.chrome_options)
 
@@ -210,7 +210,7 @@ class Scraping(object):
         
         """ function to append data at the excel file """
         # return True
-        # print(self.data)
+        print(self.data)
         if len(self.data):
             try:
                 field_names = [

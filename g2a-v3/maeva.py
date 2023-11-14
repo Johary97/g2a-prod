@@ -280,6 +280,7 @@ class AnnonceMaeva(Scraping):
                     dat['url'] = 'https://www.maeva.com/pages/fiche.php?id=45956&date_debut=2023-07-01&date_fin=2023-07-07&p=fiche-produit-produit'
 
                     self.data.append(dat)
+                    print(self.data)
 
 
 """MaevaDestinationScraper: Classe utilisée pour scraper les annonces publiées sur les destinations """
