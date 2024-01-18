@@ -92,17 +92,10 @@ class DestinationListMaeva(Scraping):
                 self.execute()
 
     def extract(self):
-
         soupe = BeautifulSoup(self.driver.page_source, 'lxml')
-        toasters = soupe.find('div', {'id': 'sl-toaster-container'}).find_all(
-            'div', class_='toaster') if soupe.find('div', {'id': 'sl-toaster-container'}) else []
-
-        for toast in toasters:
-            if toast.find('div', class_='toaster-residence-libelle') and toast.find('div', class_='toaster-residence-libelle').find('a', href=True):
-                link = toast.find(
-                    'div', class_='toaster-residence-libelle').find('a')['href']
-                if not link.startswith('/pages'):
-                    self.data.append('https://maeva.com' + link)
+        link_sources = soupe.find_all('a', {'class':'toaster-seo-link toaster-annuaire-link'}, href=True)
+        for link in link_sources:
+            self.data.append('https://maeva.com' + link['href'])
 
     def save(self):
         current_list = []
@@ -291,6 +284,7 @@ class AnnonceMaeva(Scraping):
             prix_init = prix_container.find('div', {'data-info':'prix__promo'}).text.strip()[:-1].replace(',', '.') \
                 if prix_container.find('div', {'data-info':'prix__promo'}) else prix_actuel
             n_offres, date_debut, date_fin = link_params(self.driver.current_url)
+            
             dat['web-scrapper-order'] = ''
             dat['date_price'] = self.price_date
             dat['date_debut'] = date_debut
@@ -308,6 +302,7 @@ class AnnonceMaeva(Scraping):
             dat['nom_station'] = ''
             dat['url'] = self.driver.current_url
             self.data.append(dat)
+            print(dat)
 
 
 """MaevaDestinationScraper: Classe utilisée pour scraper les annonces publiées sur les destinations """
