@@ -207,7 +207,7 @@ class AnnonceMaeva(Scraping):
             url_params = parse_qs(urlparse(url).query)
             sep = '/'
             try:
-                n_offre = sep.join(url_params['id'][0].split('-')[::-1])
+                n_offre = ''.join(url_params['id'][0].split('-')[::-1])
                 start_date = sep.join(
                     url_params['date_debut'][0].split('-')[::-1])
                 end_date = sep.join(url_params['date_fin'][0].split('-')[::-1])

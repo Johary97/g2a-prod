@@ -161,7 +161,8 @@ class AnnonceCamping(Scraping):
                     'date_debut-jour',
                     'Nb semaines',
                     'cle_station',
-                    'nom_station'
+                    'nom_station',
+                    'url'
                 ]
                 writers = writer(file)
                 writers.writerow(fields_name)
@@ -188,7 +189,8 @@ class AnnonceCamping(Scraping):
                     'date_debut-jour',
                     'Nb semaines',
                     'cle_station',
-                    'nom_station'
+                    'nom_station',
+                    'url'
                 ]
 
                 with open(self.storage_file, 'a', newline='') as f_object:
