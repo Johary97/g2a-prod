@@ -92,10 +92,17 @@ class DestinationListMaeva(Scraping):
                 self.execute()
 
     def extract(self):
+
         soupe = BeautifulSoup(self.driver.page_source, 'lxml')
-        link_sources = soupe.find_all('a', {'class':'toaster-seo-link toaster-annuaire-link'}, href=True)
-        for link in link_sources:
-            self.data.append('https://maeva.com' + link['href'])
+        toasters = soupe.find('div', {'id': 'sl-toaster-container'}).find_all(
+            'div', class_='toaster') if soupe.find('div', {'id': 'sl-toaster-container'}) else []
+
+        for toast in toasters:
+            if toast.find('div', class_='toaster-residence-libelle') and toast.find('div', class_='toaster-residence-libelle').find('a', href=True):
+                link = toast.find(
+                    'div', class_='toaster-residence-libelle').find('a')['href']
+                if not link.startswith('/pages'):
+                    self.data.append('https://maeva.com' + link)
 
     def save(self):
         current_list = []
@@ -141,7 +148,7 @@ class AnnonceMaeva(Scraping):
     def scrap(self):
         try:
             self.driver.get(self.url)
-            WebDriverWait(self.driver, randint(1, 3))
+            WebDriverWait(self.driver, randint(0, 2))
             time.sleep(2)
             while True:
                 try:
@@ -157,7 +164,7 @@ class AnnonceMaeva(Scraping):
             self.extract()
 
             print("Saving ...")
-            self.save()
+            # self.save()
             self.save_data()
         except Exception as e:
             print(e)
@@ -195,6 +202,7 @@ class AnnonceMaeva(Scraping):
         self.principal = True
 
     def extract(self):
+
         def link_params(url):
             url_params = parse_qs(urlparse(url).query)
             sep = '/'
@@ -212,40 +220,38 @@ class AnnonceMaeva(Scraping):
 
         soupe = BeautifulSoup(self.driver.page_source, 'lxml')
 
-        residence = soupe.find('h1', {"id": "fiche-produit-residence-libelle"}).text.strip() \
-            if soupe.find('h1', {"id": "fiche-produit-residence-libelle"}) else ''
-        localisation = soupe.find('div', {"id": "fiche-produit-localisation"}).find('span', class_='maeva-black').text.strip() \
-            if soupe.find('div', {"id": "fiche-produit-localisation"}) else ''
+        if soupe.find('div', class_='fiche-seo-toaster-container'):
+            toasters = soupe.find('div', class_='fiche-seo-toaster-container').find_all(
+                'div', class_='toaster') if soupe.find('div', class_='fiche-seo-toaster-container') else []
+            residence = soupe.find('h1', {"id": "fiche-produit-residence-libelle"}).text.strip() \
+                if soupe.find('h1', {"id": "fiche-produit-residence-libelle"}) else ''
+            localisation = soupe.find('button', {"id": "fiche-produit-localisation"}).find('span', class_='fs-5').text.strip() \
+                if soupe.find('button', {"id": "fiche-produit-localisation"}) else ''
 
-
-        if 'html' in self.driver.current_url:
             breadcrumbs = []
             
             try:
-                print('find_all1')
-
+                breadcrumbs = soupe.find(
+                    'ol', {'id': 'ui-ariane'}).find_all('li', {'itemprop': 'itemListElement'})
+            except:
                 breadcrumbs = soupe.find(
                     'nav', {'id': 'ui-ariane'}).find_all('div', {'itemprop': 'itemListElement'})
-            except:    
-                breadcrumbs = soupe.find('ol', {'id': 'ui-ariane'}).find_all('li', {'itemprop': 'itemListElement'})
-                print('find_all2')
-            station_breadcrumb = breadcrumbs[-2:-1][0].find('a', class_='ariane-item') if breadcrumbs[-2:-1][0].find('a', class_='ariane-item') else ''
 
+            station_breadcrumb = breadcrumbs[-2:-1][0].find('a', class_='ariane-item') if breadcrumbs[-2:-1][0].find('a', class_='ariane-item') else ''
             station_name = localisation
             station_key = station_breadcrumb['href'].split(',')[1].replace('.html', '') if station_breadcrumb != '' else ''
 
             if not station_key:
                 station_key = self.stations[station_name.upper()] if station_name.upper() in self.stations.keys() else ''
                 print(station_name, ' => ', station_key)
-            print('find_all3')
-            toasters = soupe.find('div', class_='fiche-seo-toaster-container').find_all(
-                'div', class_='toaster') if soupe.find('div', class_='fiche-seo-toaster-container') else []
 
             for toaster in toasters:
-                is_disponible = False if toaster.find('div', {'id': 'toaster-right-date'}).find('div', class_='font-logement-disabled') else True
+                is_disponible = False if toaster.find(
+                    'div', {'id': 'toaster-right-date'}).find('div', class_='font-logement-disabled') else True
 
                 if is_disponible:
                     dat = {}
+                    date_price = self.price_date
 
                     typologie = toaster.find('div', class_="toaster-residence-libelle-container").text.strip() \
                         if toaster.find('div', class_='toaster-residence-libelle-container') else ''
@@ -258,7 +264,7 @@ class AnnonceMaeva(Scraping):
 
                     n_offres, date_debut, date_fin = link_params(link)
                     dat['web-scrapper-order'] = ''
-                    dat['date_price'] = self.price_date
+                    dat['date_price'] = date_price
                     dat['date_debut'] = date_debut
                     dat['date_fin'] = date_fin
                     dat['prix_init'] = prix_init
@@ -276,33 +282,6 @@ class AnnonceMaeva(Scraping):
 
                     self.data.append(dat)
                     print(self.data)
-        else:
-            dat = {}
-            typologie = soupe.find('h2', {'id':'fiche-produit-produit-libelle'}).text.strip() if soupe.find('h2', {'id':'fiche-produit-produit-libelle'}) else ''
-            prix_container = soupe.find('div', {'data-info':'prix__container'})
-            prix_actuel = prix_container.find('div', {'data-info':'prix__final'}).text.strip()[:-1].replace(',', '.')
-            prix_init = prix_container.find('div', {'data-info':'prix__promo'}).text.strip()[:-1].replace(',', '.') \
-                if prix_container.find('div', {'data-info':'prix__promo'}) else prix_actuel
-            n_offres, date_debut, date_fin = link_params(self.driver.current_url)
-            
-            dat['web-scrapper-order'] = ''
-            dat['date_price'] = self.price_date
-            dat['date_debut'] = date_debut
-            dat['date_fin'] = date_fin
-            dat['prix_init'] = prix_init
-            dat['prix_actuel'] = prix_actuel
-            dat['typologie'] = typologie
-            dat['n_offre'] = n_offres
-            dat['nom'] = residence
-            dat['localite'] = localisation
-            dat['date_debut-jour'] = ''
-            dat['Nb semaines'] = datetime.strptime(
-                date_debut, '%d/%m/%Y').isocalendar()[1]
-            dat['cle_station'] = ''
-            dat['nom_station'] = ''
-            dat['url'] = self.driver.current_url
-            self.data.append(dat)
-            print(dat)
 
 
 """MaevaDestinationScraper: Classe utilisée pour scraper les annonces publiées sur les destinations """
@@ -352,10 +331,7 @@ class MaevaDestinationScraper:
             date_debut = datetime.strftime(next_saturday, '%Y-%m-%d')
             date_fin = datetime.strftime(
                 next_saturday + timedelta(days=6), '%Y-%m-%d')
-            if 'page' in base_url:
-                urls.append(f"{base_url}&date_debut={date_debut}&date_fin={date_fin}")
-            else:    
-                urls.append(
+            urls.append(
                 f"{base_url}?date_debut={date_debut}&date_fin={date_fin}&residence_cle={dest_id}&formule=0&ordreSeo=prixAsc")
             next_saturday += timedelta(days=7)
 

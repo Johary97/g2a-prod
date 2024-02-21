@@ -258,7 +258,7 @@ class CampingScraper(Scraper):
                 c.scrap()
                 time.sleep(5)
                 c.extract()
-                c.save()
+                # c.save()
                 c.save_data()
                 self.set_history('last_index', index)
 

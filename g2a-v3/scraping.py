@@ -144,7 +144,7 @@ class Scraping(object):
                 self.scrap()
                 time.sleep(2)
                 self.extract()
-                self.save()
+                # self.save()
                 if not self.is_json:
                     self.save_data()
             except Exception as e:
@@ -188,13 +188,17 @@ class Scraping(object):
                     'date_debut-jour',
                     'Nb semaines',
                     'cle_station',
-                    'nom_station'
+                    'nom_station',
+                    'url'
                 ]
                 writers = writer(file)
                 writers.writerow(fields_name)
 
-    def save(self) -> None:
+    def validate_data(self, data:list) -> list:
+        pass
 
+    def save(self) -> None:
+        print('  ==> saving to the api ...')
         if len(self.data):
             # self.tag_counter += 1
             str_datas = G2A.format_data(self.data, self.website_name, self.tag_counter)
@@ -205,6 +209,7 @@ class Scraping(object):
                 "data_content": str_datas
             })
             print(res)
+
 
     def save_data(self) -> bool:
         
@@ -227,10 +232,11 @@ class Scraping(object):
                             'date_debut-jour',
                             'Nb semaines',
                             'cle_station',
-                            'nom_station'
+                            'nom_station',
+                            'url'
                         ]
 
-                with open(self.storage_file, 'a', newline='') as f_object:
+                with open(self.storage_file, 'a', newline='', encoding='utf-8') as f_object:
                     dictwriter_object = csv.DictWriter(f_object, fieldnames=field_names)
                     dictwriter_object.writerows(self.data)
                     return True
