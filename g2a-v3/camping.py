@@ -137,6 +137,7 @@ class AnnonceCamping(Scraping):
                 data['url'] = self.driver.current_url
                 datas.append(data)
             self.data = datas
+            print(self.data)
 
         except Exception as e:
             print(e)
