@@ -1,31 +1,35 @@
-import csv
+
+import argparse
+from csv import writer
+from datetime import datetime, timedelta
+from random import randint
+import sys
+import threading
+import time
+import pandas as pd
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import ElementNotVisibleException, ElementNotSelectableException
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromeService
 from bs4 import BeautifulSoup
-from datetime import datetime
-from csv import DictWriter, writer
-from queue import Queue
-from datetime import timedelta
-import pandas as pd
-import threading
-import json
-import os
-import time
-import requests
-from random import randint
-from unidecode import unidecode
-import re
 from urllib.parse import urlparse, parse_qs
-from scraping import Scraping, Scraper
-from tools.args import main_arguments, ARGS_INFO, check_arguments
+import re
+from langdetect import detect
+from abc import ABC, abstractmethod
 import dotenv
-from tools.g2a import CSVUploader
+import os
+import json
+from selenium.webdriver.common.keys import Keys
+import socket
+from selenium.webdriver.remote.command import Command
+from scraping import Scraping, Scraper
+from tools.args import main_arguments, check_arguments
 from tools.changeip import refresh_connection
-
+from tools.g2a import CSVUploader, G2A
 
 class AnnonceCamping(Scraping):
     def __init__(self, in_background:bool=False) -> None:

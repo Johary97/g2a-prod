@@ -195,6 +195,8 @@ class AnnonceMaeva(Scraping):
 
             page += 1
 
+        print(self.stations)
+
     def set_price_date(self, price_date):
         self.price_date = price_date
 
@@ -221,8 +223,8 @@ class AnnonceMaeva(Scraping):
         soupe = BeautifulSoup(self.driver.page_source, 'lxml')
 
         if soupe.find('div', class_='fiche-seo-toaster-container'):
-            toasters = soupe.find('div', class_='fiche-seo-toaster-container').find_all(
-                'div', class_='toaster') if soupe.find('div', class_='fiche-seo-toaster-container') else []
+            toasters = soupe.find('div', {'id':'fiche-seo-toaster-anchor'}).find_all('div', {'class':'toaster fiche-bloc-produit-item-b cursor-auto w100'}) \
+                if soupe.find('div', {'id':'fiche-seo-toaster-anchor'}).find_all('div', {'class':'toaster fiche-bloc-produit-item-b cursor-auto w100'}) else []
             residence = soupe.find('h1', {"id": "fiche-produit-residence-libelle"}).text.strip() \
                 if soupe.find('h1', {"id": "fiche-produit-residence-libelle"}) else ''
             localisation = soupe.find('button', {"id": "fiche-produit-localisation"}).find('span', class_='fs-5').text.strip() \
@@ -246,8 +248,7 @@ class AnnonceMaeva(Scraping):
                 print(station_name, ' => ', station_key)
 
             for toaster in toasters:
-                is_disponible = False if toaster.find(
-                    'div', {'id': 'toaster-right-date'}).find('div', class_='font-logement-disabled') else True
+                is_disponible = False if toaster.find('div', {'class':'toaster-right fiche_produit_indispo'}) else True
 
                 if is_disponible:
                     dat = {}
@@ -255,11 +256,21 @@ class AnnonceMaeva(Scraping):
 
                     typologie = toaster.find('div', class_="toaster-residence-libelle-container").text.strip() \
                         if toaster.find('div', class_='toaster-residence-libelle-container') else ''
-                    prix_actuel = toaster.find('div', class_="fiche-produit-prix-item").text.strip()[:-1] \
-                        if toaster.find('div', class_="fiche-produit-prix-item") else 0.00
-                    prix_init = toaster.find('span', class_="fiche-produit-prix-barre-item").text.strip()[:-1] \
-                        if toaster.find('span', class_="fiche-produit-prix-barre-item") else prix_actuel
-                    link = 'www.maeva.com' + toaster.find("div", class_="toaster-right-cta").find("a", href=True)['href'] \
+                    prix_actuel = 0.00
+                    prix_init = 0.00
+                    try:
+                        prix_actuel = toaster.find('div', class_="fiche-produit-prix-item").text.strip()[:-1] \
+                            if toaster.find('div', class_="fiche-produit-prix-item") else 0.00
+                    except:
+                        prix_actuel = toaster.find('span', {'class':'price_item_final'}).find('span').text.strip()[:-1] \
+                            if toaster.find('span', {'class':'price_item_final'}).find('span') else 0.00
+                    try:
+                        prix_init = toaster.find('span', class_="fiche-produit-prix-barre-item").text.strip()[:-1] \
+                            if toaster.find('span', class_="fiche-produit-prix-barre-item") else prix_actuel
+                    except:
+                        prix_init = toaster.find('span', {'class':'price_item_barre'}).text.strip()[:-1] \
+                            if toaster.find('span', {'class':'price_item_barre'}) else prix_actuel
+                    link = toaster.find("div", class_="toaster-right-cta").find("a", href=True)['href'] \
                         if toaster.find("div", class_="toaster-right-cta") else ''
 
                     n_offres, date_debut, date_fin = link_params(link)
@@ -278,10 +289,10 @@ class AnnonceMaeva(Scraping):
                         date_debut, '%d/%m/%Y').isocalendar()[1]
                     dat['cle_station'] = station_key
                     dat['nom_station'] = station_name
-                    dat['url'] = self.driver.current_url
+                    dat['url'] = link
 
                     self.data.append(dat)
-                    print(self.data)
+        print(self.data)
 
 
 """MaevaDestinationScraper: Classe utilisée pour scraper les annonces publiées sur les destinations """

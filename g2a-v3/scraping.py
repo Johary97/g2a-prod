@@ -215,7 +215,6 @@ class Scraping(object):
         
         """ function to append data at the excel file """
         # return True
-        print(self.data)
         if len(self.data):
             try:
                 field_names = [
