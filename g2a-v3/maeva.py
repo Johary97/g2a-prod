@@ -285,7 +285,6 @@ class AnnonceMaeva(Scraping):
                     dat['url'] = link
 
                     self.data.append(dat)
-        print(self.data)
 
 
 """MaevaDestinationScraper: Classe utilisée pour scraper les annonces publiées sur les destinations """
