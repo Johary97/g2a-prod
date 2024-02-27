@@ -256,20 +256,13 @@ class AnnonceMaeva(Scraping):
 
                     typologie = toaster.find('div', class_="toaster-residence-libelle-container").text.strip() \
                         if toaster.find('div', class_='toaster-residence-libelle-container') else ''
-                    prix_actuel = 0.00
-                    prix_init = 0.00
-                    try:
-                        prix_actuel = toaster.find('div', class_="fiche-produit-prix-item").text.strip()[:-1] \
-                            if toaster.find('div', class_="fiche-produit-prix-item") else 0.00
-                    except:
-                        prix_actuel = toaster.find('span', {'class':'price_item_final'}).find('span').text.strip()[:-1] \
-                            if toaster.find('span', {'class':'price_item_final'}).find('span') else 0.00
-                    try:
-                        prix_init = toaster.find('span', class_="fiche-produit-prix-barre-item").text.strip()[:-1] \
-                            if toaster.find('span', class_="fiche-produit-prix-barre-item") else prix_actuel
-                    except:
-                        prix_init = toaster.find('span', {'class':'price_item_barre'}).text.strip()[:-1] \
-                            if toaster.find('span', {'class':'price_item_barre'}) else prix_actuel
+
+                    prix_actuel = toaster.find('span', {'class':'price_item_final'}).find('span').text.strip()[:-1] \
+                        if toaster.find('span', {'class':'price_item_final'}).find('span') else 0.00
+
+                    prix_init = toaster.find('span', {'class':'price_item_barre'}).text.strip()[:-1] \
+                        if toaster.find('span', {'class':'price_item_barre'}) else prix_actuel
+                    
                     link = toaster.find("div", class_="toaster-right-cta").find("a", href=True)['href'] \
                         if toaster.find("div", class_="toaster-right-cta") else ''
 
