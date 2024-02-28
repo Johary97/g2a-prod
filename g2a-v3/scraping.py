@@ -144,7 +144,7 @@ class Scraping(object):
                 self.scrap()
                 time.sleep(2)
                 self.extract()
-                # self.save()
+                self.save()
                 if not self.is_json:
                     self.save_data()
             except Exception as e:
@@ -199,16 +199,16 @@ class Scraping(object):
 
     def save(self) -> None:
         print('  ==> saving to the api ...')
-        if len(self.data):
-            # self.tag_counter += 1
-            str_datas = G2A.format_data(self.data, self.website_name, self.tag_counter)
-            res = G2A.post_accommodation("accommodations/multi", {
-                "nights": self.nights,
-                "website_name": self.website_name,
-                "website_url": self.website_url,
-                "data_content": str_datas
-            })
-            print(res)
+        # if len(self.data):
+        #     # self.tag_counter += 1
+        #     str_datas = G2A.format_data(self.data, self.website_name, self.tag_counter)
+        #     res = G2A.post_accommodation("accommodations/multi", {
+        #         "nights": self.nights,
+        #         "website_name": self.website_name,
+        #         "website_url": self.website_url,
+        #         "data_content": str_datas
+        #     })
+        #     print(res)
 
 
     def save_data(self) -> bool:

@@ -282,7 +282,7 @@ class AnnonceMaeva(Scraping):
                         date_debut, '%d/%m/%Y').isocalendar()[1]
                     dat['cle_station'] = station_key
                     dat['nom_station'] = station_name
-                    dat['url'] = link
+                    dat['url'] = link.replace('https://www.maeva.com', '')
 
                     self.data.append(dat)
 
