@@ -172,7 +172,7 @@ class AnnonceMaeva(Scraping):
                 refresh_connection()
                 
             print("Wait and refresh ...")
-            time.sleep(5)
+            time.sleep(3)
             self.scrap()
 
     def init_station_list(self):
