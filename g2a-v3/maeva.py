@@ -164,7 +164,7 @@ class AnnonceMaeva(Scraping):
             self.extract()
 
             print("Saving ...")
-            # self.save()
+            self.save()
             self.save_data()
         except Exception as e:
             print(e)
