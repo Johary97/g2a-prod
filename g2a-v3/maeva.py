@@ -334,8 +334,7 @@ class MaevaDestinationScraper:
             date_debut = datetime.strftime(next_saturday, '%Y-%m-%d')
             date_fin = datetime.strftime(
                 next_saturday + timedelta(days=6), '%Y-%m-%d')
-            urls.append(
-                f"{base_url}?date_debut={date_debut}&date_fin={date_fin}&residence_cle={dest_id}&formule=0&ordreSeo=prixAsc")
+            urls.append(f"{base_url}?date_debut={date_debut}&date_fin={date_fin}&residence_cle={dest_id}&formule=0&ordreSeo=prixAsc")
             next_saturday += timedelta(days=7)
 
         return urls

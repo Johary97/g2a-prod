@@ -1,32 +1,15 @@
 
-import argparse
 from csv import writer
 from datetime import datetime, timedelta
-from random import randint
-import sys
-import threading
 import time
 import pandas as pd
 import csv
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import ElementNotVisibleException, ElementNotSelectableException
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service as ChromeService
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
-import re
-from langdetect import detect
-from abc import ABC, abstractmethod
 import dotenv
 import os
 import json
-from selenium.webdriver.common.keys import Keys
-import socket
-from selenium.webdriver.remote.command import Command
 from scraping import Scraping, Scraper
 from tools.args import main_arguments, check_arguments
 from tools.changeip import refresh_connection
@@ -64,23 +47,10 @@ class AnnonceCamping(Scraping):
     def extract(self) -> None:
         def extract_dates(string_date,year):
             months = {'janv.': 1, 'févr.': 2, 'mars': 3, 'avr.': 4, 'mai': 5, 'juin': 6, 'juil.': 7, 'août': 8, 'sept.': 9, 'oct.': 10, 'nov.': 11, 'déc.': 12}
-            date_split = []
-            i = 0
-
-            for s in string_date.split('\n'):
-                if i==2:
-                    s = s.strip().split(' ')
-                    day = s[0]
-                    month = s[1]
-                    date_split.append(day)
-                    date_split.append(month)
-
-                elif s != ' ':
-                    date_split.append(s.strip())
-                
-                i += 1
-
-            return datetime.strftime(datetime.strptime(f"{date_split[2]}/{months[date_split[3]]}/{year}", '%d/%m/%Y'), '%d/%m/%Y') 
+            split_date = string_date.split(' ')
+            start_date = f"{split_date[0]}/{months[split_date[-1]]}/{year}"
+            end_date = f"{split_date[1]}/{months[split_date[-1]]}/{year}"
+            return start_date, end_date
 
         try:
             soupe = BeautifulSoup(self.driver.page_source, 'lxml')
@@ -95,11 +65,13 @@ class AnnonceCamping(Scraping):
                 localite = soupe.find('div', class_='product__localisation').text.strip().replace("- Voir sur la carte", "") \
                     if soupe.find('div', class_='product__localisation') else ''
             except Exception as e:
-                print(e)
-                
+                print(e) 
+
+            results = []
             try:
-                results = soupe.find('div', class_='dca-results__list').find_all('div', class_='dca-result--accommodation') \
-                    if soupe.find('div', class_='dca-results__list').find_all('div', class_='dca-result--accommodation') else []
+                results = soupe.find('div', {'class':'results__list'}).find_all('div', {'class':'accommodation-card result__card'}) \
+                    if soupe.find('div', {'class':'results__list'}).find_all('div', {'class':'accommodation-card result__card'}) else []
+                print(len(results))
             except Exception as e:
                 print(e)
 
@@ -108,22 +80,22 @@ class AnnonceCamping(Scraping):
             final_results = []
 
             for result in results:
-                dates_string = result.find('div', class_="dates__values").text.strip()
-                date_1 = extract_dates(dates_string, year=date_debut.split('/')[2])
-                if date_1 == date_debut:
+                dates_string = result.find('div', {'class':'accommodation-card__offer-dates'}).text.strip().split(',')[0].replace('Du ', '').replace('au ', '')
+                date_start, date_end = extract_dates(dates_string, year=date_debut.split('/')[2])
+                if date_start == date_debut:
                     final_results.append(result)
 
             for result in final_results:
+                print('extracting ...')
                 data = {}
-                typologie = result.find('h3', class_="result__name").text.strip() \
-                    if result.find('h3', class_="result__name") else ''
-                adulte = result.find('div', attrs={'data-property':"adults"}).text.strip() \
-                    if result.find('div',attrs={'data-property':"adults"}) else ''
-                prix_actuel = re.sub(r'[^0-9.]', '', (result.find('div', class_='best-offer__price-value').text.strip()[:-2].replace(',', '.'))).replace(' ', '') \
-                    if result.find('div', class_='best-offer__price-value') else ''
-                prix_init = re.sub(r'[^0-9.]', '', (result.find('div', class_="best-offer__price-old").text.strip()[:-2].replace(',','.'))).replace(' ', '') \
-                    if result.find('div', class_="best-offer__price-old") else prix_actuel
-
+                typologie = result.find('div', {'class':'accommodation-card__name'}).text.strip() \
+                    if result.find('div', {'class':'accommodation-card__name'}) else ''
+                adulte = result.find('div', {'data-property':'adults'}).text.strip() \
+                    if result.find('div', {'data-property':'adults'}) else ''
+                prix_actuel = result.find('div', {'class':'accommodation-card__offer-price'}).text.strip().replace('€', '').replace('\xa0', '').replace(',', '.') \
+                    if result.find('div', {'class':'accommodation-card__offer-price'}) else ''
+                prix_init = result.find('div', {'class':'accommodation-card__offer-old-price'}).find('span').text.strip().replace('€', '').replace('\xa0', '').replace(',', '.') \
+                    if result.find('div', {'class':'accommodation-card__offer-old-price'}) else prix_actuel
                 data['web-scrapper-order'] = ''
                 data['date_price'] = self.week_scrap
                 data['date_debut'] = date_debut
@@ -266,7 +238,7 @@ class CampingScraper(Scraper):
                 c.scrap()
                 time.sleep(5)
                 c.extract()
-                # c.save()
+                c.save()
                 c.save_data()
                 self.set_history('last_index', index)
 
@@ -275,7 +247,7 @@ class CampingScraper(Scraper):
                     if counter == 100:
                         refresh_connection()
                         counter = 0
-                # c.increment_counter()
+                c.increment_counter()
             except Exception as e:
                 if self.principal:
                     refresh_connection()
