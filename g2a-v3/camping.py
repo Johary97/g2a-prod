@@ -77,15 +77,13 @@ class AnnonceCamping(Scraping):
 
             datas = []
             station_key, date_debut, date_fin = self.get_link_data()
-            final_results = []
+            # for result in results:
+            #     dates_string = result.find('div', {'class':'accommodation-card__offer-dates'}).text.strip().split(',')[0].replace('Du ', '').replace('au ', '')
+            #     date_start, date_end = extract_dates(dates_string, year=date_debut.split('/')[2])
+            #     if date_start == date_debut:
+            #         final_results.append(result)
 
             for result in results:
-                dates_string = result.find('div', {'class':'accommodation-card__offer-dates'}).text.strip().split(',')[0].replace('Du ', '').replace('au ', '')
-                date_start, date_end = extract_dates(dates_string, year=date_debut.split('/')[2])
-                if date_start == date_debut:
-                    final_results.append(result)
-
-            for result in final_results:
                 print('extracting ...')
                 data = {}
                 typologie = result.find('div', {'class':'accommodation-card__name'}).text.strip() \
