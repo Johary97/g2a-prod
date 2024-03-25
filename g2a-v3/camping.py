@@ -54,15 +54,15 @@ class AnnonceCamping(Scraping):
 
         try:
             soupe = BeautifulSoup(self.driver.page_source, 'lxml')
-            name = ''.join(soupe.find('h1', class_='product__name').text.strip().split('\n')[:-1]) \
+            name = ''.join(soupe.find('h1', class_='product__name').text.strip().split('\n')[:-1]).replace(',', '-') \
                 if soupe.find('h1', class_='product__name') else ''
             localite = ''
 
             try:
-                localite = ''.join(soupe.find('div', class_='product__localisation').text.strip().split('\n')[0].split('-')[1]).replace(", FRANCE", "") \
+                localite = ''.join(soupe.find('div', class_='product__localisation').text.strip().split('\n')[0].split('-')[1]).replace(", FRANCE", "").replace(',', '-') \
                     if soupe.find('div', class_='product__localisation') else ''
             except IndexError:
-                localite = soupe.find('div', class_='product__localisation').text.strip().replace("- Voir sur la carte", "") \
+                localite = soupe.find('div', class_='product__localisation').text.strip().replace("- Voir sur la carte", "").replace(',', '-') \
                     if soupe.find('div', class_='product__localisation') else ''
             except Exception as e:
                 print(e) 
@@ -86,7 +86,7 @@ class AnnonceCamping(Scraping):
             for result in results:
                 print('extracting ...')
                 data = {}
-                typologie = result.find('div', {'class':'accommodation-card__name'}).text.strip() \
+                typologie = result.find('div', {'class':'accommodation-card__name'}).text.strip().replace(',', '-') \
                     if result.find('div', {'class':'accommodation-card__name'}) else ''
                 adulte = result.find('div', {'data-property':'adults'}).text.strip() \
                     if result.find('div', {'data-property':'adults'}) else ''
