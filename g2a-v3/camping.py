@@ -90,9 +90,9 @@ class AnnonceCamping(Scraping):
                     if result.find('div', {'class':'accommodation-card__name'}) else ''
                 adulte = result.find('div', {'data-property':'adults'}).text.strip() \
                     if result.find('div', {'data-property':'adults'}) else ''
-                prix_actuel = result.find('div', {'class':'accommodation-card__offer-price'}).text.strip().replace('€', '').replace('\xa0', '').replace(',', '.') \
+                prix_actuel = result.find('div', {'class':'accommodation-card__offer-price'}).text.strip().replace('€', '').replace('\xa0', '').replace(',', '.').replace('\u202f', '').replace(' ', '') \
                     if result.find('div', {'class':'accommodation-card__offer-price'}) else ''
-                prix_init = result.find('div', {'class':'accommodation-card__offer-old-price'}).find('span').text.strip().replace('€', '').replace('\xa0', '').replace(',', '.') \
+                prix_init = result.find('div', {'class':'accommodation-card__offer-old-price'}).find('span').text.strip().replace('€', '').replace('\xa0', '').replace(',', '.').replace('\u202f', '').replace(' ', '') \
                     if result.find('div', {'class':'accommodation-card__offer-old-price'}) else prix_actuel
                 data['web-scrapper-order'] = ''
                 data['date_price'] = self.week_scrap
