@@ -41,6 +41,8 @@ class Scraping(object):
             '--disable-blink-features=AutomationControlled')
         # in_background and self.chrome_options.add_argument('--headless')
         self.chrome_options.add_argument('--incognito')
+        self.chrome_options.add_argument('--allow-insecure-localhost') 
+        self.chrome_options.add_argument('--ignore-ssl-errors=yes')
 
         self.firefox_options = webdriver.FirefoxOptions()
         self.firefox_options.add_argument('--disable-gpu')
