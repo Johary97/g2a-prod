@@ -341,8 +341,8 @@ class CampingInitializer(Scraping):
             if soupe.find('div', class_="dca-results__list").find_all('section', class_='dca-result--product') else []
         
         if not len(results):
-            results = soupe.find('div', {'class': 'dca-results__list'}).find_all('div', {'class': 'dca-product-card'}) \
-                if soupe.find('div', {'class': 'dca-results__list'}) and soupe.find('div', {'class': 'dca-results__list'}).find_all('div', {'class': 'dca-product-card'}) else []
+            results = soupe.find('div', {'class': 'dca-results__list'}).find_all('div', {'class': 'product-card'}) \
+                if soupe.find('div', {'class': 'dca-results__list'}) and soupe.find('div', {'class': 'dca-results__list'}).find_all('div', {'class': 'product-card'}) else []
     
         print(len(results))
 
