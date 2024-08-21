@@ -47,7 +47,7 @@ class Scraping(object):
         self.firefox_options = webdriver.FirefoxOptions()
         self.firefox_options.add_argument('--disable-gpu')
         self.firefox_options.add_argument('--ignore-certificate-errors')
-        #in_background and self.firefox_options.add_argument('--headless')
+        in_background and self.firefox_options.add_argument('--headless')
         self.firefox_options.add_argument('--incognito')
 
         # self.driver = webdriver.Firefox(service=FirefoxService(
